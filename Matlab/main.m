@@ -62,11 +62,21 @@ plot(el_x,el_y,'b')
 h2m(1) = abs(angleLeftMirror-angleHead); % Angle 2 Left
 h2m(2) = abs(angleRightMirror-angleHead); % Angle 2 Right
 k = 1; v = zeros(1,round(N)-1);
-for i=1:round(N)-1
-    v(i) = 2*h2m(k);
+% Definisco sfasamenti in angoli tra le teste
+for i=1:round(N)-1 
     if(k == 1)
+        if i<3
+            v(i) = angleHead + 2*h2m(k);
+        else
+            v(i) = v(i-2) + 2*h2m(k);
+        end     
         k=2;
     else
+        if i<3
+            v(i) = angleHead - 2*h2m(k);
+        else
+            v(i) = v(i-2) - 2*h2m(k);
+        end  
         k=1;
     end
 end
