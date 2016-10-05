@@ -1,5 +1,12 @@
-function [X,Y] = rotate(x, y, centerX, centerY, alpha)
-R = rotz(alpha);
+function [X,Y] = rotate(x, y, centerX, centerY, alpha, axis)
+if strcmp(axis,'z')
+    R = rotz(alpha);
+elseif strcmp(axis,'x')
+    R = rotx(alpha);
+else
+    R = roty(alpha);
+end
+
 dimX = size(x);
 dimY = size(y);
 assert(dimX(1) == dimY(1));

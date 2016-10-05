@@ -5,13 +5,13 @@ mirror2Pivot = 3;           %cm
 offset2Mirror = 3.2;
 pivot2pivot = 28.5;         %cm
 lengthHead = 20;            %cm % vertical 2*radius
-widthHead = 18;             %cm % horizontal 2*radius
+widthHead = 10;             %cm % horizontal 2*radius
 %% Parameters
-angleRightMirror = 43.7;    %deg
+angleRightMirror = 73.7;    %deg
 angleLeftMirror = 106.3;    %deg
 distanceCamera = 200;       %cm
 fovHCamera = 83;            %deg
-headPosx = 6+0.5*pivot2pivot; %cm % x0,y0 ellipse centre coordinates
+headPosx = 0.5*pivot2pivot; %cm % x0,y0 ellipse centre coordinates
 headPosy = 36;              %cm
 %% Logic
 lengthPivotMirrors = lengthMirrors+mirror2Pivot;
@@ -52,14 +52,15 @@ end
 v = genMirroring(angleLeftMirror, angleRightMirror, angleHead, N);
 el_X = zeros(size(v,2),size(el_x,2));
 el_Y = zeros(size(v,2),size(el_y,2));
+
+%% Flip per effetto mirroring
 for i=1:size(v,2);
     el_x_flip = el_x;
-%     if v(3,i) == -1
-%         el_x_flip = fliplr(el_x_flip); %% Verificare
-%     elseif v(3,i) == 1
-%         el_x_flip = fliprl(el_x_flip);
-%     end
-    [el_X(i,:),el_Y(i,:)] = rotate(el_x_flip,el_y,mirrorsCenter(1),mirrorsCenter(2),v(1,i));
+    el_y_flip = el_y;
+    if v(2,i) ~= 0
+        [el_x_flip,el_y_flip] = rotate(el_x_flip,el_y_flip,headPosx,-headPosy,180,'y');
+    end
+    [el_X(i,:),el_Y(i,:)] = rotate(el_x_flip,el_y_flip,mirrorsCenter(1),mirrorsCenter(2),v(1,i),'z');
 end
 
 %% Plot Inverti le Y. plot([x1 x2], [y1 y2])
@@ -86,19 +87,27 @@ end
 
 %% Disegnare elemento centrale
 mul = 2;
+isLeft = true;
+Points = [inPointLeft(1), -inPointLeft(2); inPointRight(1), -inPointRight(2)];
+oldPoints = [inPointLeft(1), -inPointLeft(2); inPointRight(1), -inPointRight(2)];
 for i=1:size(v,2);
-    if v(2,i) == 1
-        [xx,yy] = rotate(inPointLeft(1), -inPointLeft(2),mirrorsCenter(1),mirrorsCenter(2),mul*angleBetweenMirror);
-        plot([inPointRight(1) xx],[-inPointRight(2) yy]);
+    if (isLeft)
+        [xx1,yy1] = rotate(Points(2,1), Points(2,2),mirrorsCenter(1),mirrorsCenter(2),-mul*angleBetweenMirror,'z');
+        plot([oldPoints(1,1) xx1],[oldPoints(1,2) yy1]);
+        oldPoints(1,1) = xx1;
+        oldPoints(1,2) = yy1;
     else
-        [xx,yy] = rotate(inPointRight(1), -inPointRight(2),mirrorsCenter(1),mirrorsCenter(2),-mul*angleBetweenMirror);
-        plot([ inPointLeft(1) xx],[-inPointLeft(2) yy]);
+        [xx2,yy2] = rotate(Points(1,1), Points(1,2),mirrorsCenter(1),mirrorsCenter(2),mul*angleBetweenMirror,'z');
+        plot([oldPoints(2,1) xx2],[oldPoints(2,2) yy2]);
+         oldPoints(2,1) = xx2;
+         oldPoints(2,2) = yy2;
     end
     if mod(i,2) == 0 && i> 1
-        mul = mul+2;
+        mul = mul+1;
     end
+    isLeft =~ isLeft;
 end
-%% TODO fare flip e disegnare figura al centro
+
 %% TODO calcolare indice di copertura
 
 
