@@ -7,8 +7,8 @@ pivot2pivot = 28.5;         %cm
 lengthHead = 20;            %cm % vertical 2*radius
 widthHead = 10;             %cm % horizontal 2*radius
 %% Parameters
-angleRightMirror = 73.7;    %deg
-angleLeftMirror = 106.3;    %deg
+angleRightMirror = 67.5;    %deg
+angleLeftMirror = 142.5;    %deg
 distanceCamera = 200;       %cm
 fovHCamera = 83;            %deg
 headPosx = 0.5*pivot2pivot; %cm % x0,y0 ellipse centre coordinates
