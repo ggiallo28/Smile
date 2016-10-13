@@ -292,7 +292,7 @@ for i = 1:size(CC.PixelIdxList,2)
         blackwhite_BW(s.BoundingBox(2):s.BoundingBox(2)+s.BoundingBox(4),s.BoundingBox(1):s.BoundingBox(1)+s.BoundingBox(3)) = img_fill; 
     end
 end
-obj.black_white = blackwhite_BW;
+obj.black_white = imfill(blackwhite_BW,'holes');
 
 %% Separazione delle Tessere
 BW = bwareaopen(BW, 50); % Parametro
@@ -375,7 +375,9 @@ for i = 1:size(x,1)
     figure, imshow(chess);
     CC = bwconncomp(chess);
     s = regionprops(CC,'centroid');
-    obj = putCenters(obj, x(i,1), y(i,1), s, i, size(chess,1)); 
+    obj = putCenters(obj, x(i,1), y(i,1), s, i, size(chess,1));
+    obj.chess(i).mask = false(size(bwD));
+    obj.chess(i).mask(y(i,1):y(i,2),x(i,1):x(i,2)) = chess;
 %     centroids = cat(1, s.Centroid);
 %     %Display original image and superimpose centroids.
 %     hold on

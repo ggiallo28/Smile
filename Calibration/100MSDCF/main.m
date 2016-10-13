@@ -48,44 +48,73 @@ obj_red = createMask(I,'red');
 obj_green = createMask(I,'green');
 obj_blue = createMask(I,'blue');
 obj_yellow = createMask(I,'yellow');
+obj_chess = [obj_red;obj_green;obj_blue;obj_yellow];
 inv_BW = uint8(obj_red.black_white|obj_green.black_white|obj_blue.black_white|obj_yellow.black_white);
 col_BW = uint8(obj_red.color_mask|obj_green.color_mask|obj_blue.color_mask|obj_yellow.color_mask);
 BW = 255*(inv_BW-col_BW);
 fuse = obj_red.masked_rgb+obj_green.masked_rgb+obj_blue.masked_rgb+obj_yellow.masked_rgb+repmat(BW,[1 1 3]);
 imshow(fuse); hold on;
-obj = obj_red;
-for i = 1:size(obj.chess,2)
-    for k=1:size(obj.chess(i).center_x,1)
-        for j=1:size(obj.chess(i).center_x,2)
-            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
-        end
-    end
-end
-obj = obj_green;
-for i = 1:size(obj.chess,2)
-    for k=1:size(obj.chess(i).center_x,1)
-        for j=1:size(obj.chess(i).center_x,2)
-            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
-        end
-    end
-end
-obj = obj_blue;
-for i = 1:size(obj.chess,2)
-    for k=1:size(obj.chess(i).center_x,1)
-        for j=1:size(obj.chess(i).center_x,2)
-            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
-        end
-    end
-end
-obj = obj_yellow;
-for i = 1:size(obj.chess,2)
-    for k=1:size(obj.chess(i).center_x,1)
-        for j=1:size(obj.chess(i).center_x,2)
-            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
+for l=1:size(obj_chess,1)
+    obj = obj_chess(l);
+    for i = 1:size(obj.chess,2)
+        for k=1:size(obj.chess(i).center_x,1)
+            for j=1:size(obj.chess(i).center_x,2)
+                scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
+            end
         end
     end
 end
 hold off;
+%% Separa i riflessi
+enlarged = imdilate(fuse,strel('disk',20));
+CC = bwconncomp(enlarged);
+maskCenter = false(size(fuse)); maskCenter(CC.PixelIdxList{2}) = 1;  maskCenter = maskCenter(:,:,1) | maskCenter(:,:,2)| maskCenter(:,:,3);
+maskLeft = false(size(fuse)); maskLeft(CC.PixelIdxList{1}) = 1;  maskLeft = maskLeft(:,:,1) | maskLeft(:,:,2) | maskLeft(:,:,3);
+maskRight = false(size(fuse)); maskRight(CC.PixelIdxList{3}) = 1;  maskRight = maskRight(:,:,1) | maskRight(:,:,2) | maskRight(:,:,3);
+positions = [{'Left'} {'Center'} {'Right'}];
+types = [{'Primary'} {'Secondary'} {'Real'}];
+for l=1:size(obj_chess,1)
+    left = 0;
+    right = 0;
+    arr = [];
+    for i = 1:size(obj_chess(l).chess,2)
+        v(1) = sum(sum(obj_chess(l).chess(i).mask&maskLeft));
+        v(2) = sum(sum(obj_chess(l).chess(i).mask&maskCenter));
+        v(3) = sum(sum(obj_chess(l).chess(i).mask&maskRight));
+        idx = find(v==max(v));
+        obj_chess(l).chess(i).position = positions(idx);
+        if idx==2
+            obj_chess(l).chess(i).type =types(3);
+        end
+        if(idx==1)
+           left = left +1; 
+        end
+        if(idx==3)
+           right = right +1; 
+        end
+        arr = [arr,obj_chess(l).chess(i).position];
+    end
+    if(left == 2)
+       idx = find(strcmp(arr,positions(1)));
+       obj_chess(l).chess(idx(1)).type = types(2);
+       obj_chess(l).chess(idx(2)).type = types(1);
+    end
+    if(left == 1)
+       idx = find(strcmp(arr,positions(1)));
+       obj_chess(l).chess(idx(1)).type = types(1);
+    end
+    if(right == 2)
+       idx = find(strcmp(arr,positions(3)));
+       obj_chess(l).chess(idx(1)).type = types(1);
+       obj_chess(l).chess(idx(2)).type = types(2);      
+    end
+    if(right == 1)
+       idx = find(strcmp(arr,positions(3)));
+       obj_chess(l).chess(idx(1)).type = types(1); 
+    end
+end
+imshow(maskCenter|maskLeft|maskRight)
+figure, imshow(enlarged);
 %% Fissa il centro degli assi
 % BW = uint8(255*(inv_BW_red-BW_red));
 % Red = RedImage+repmat(BW,[1 1 3]);
