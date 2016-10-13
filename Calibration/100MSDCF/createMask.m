@@ -1,4 +1,4 @@
-function [BW,blackwhite_BW, maskedRGBImage, centers] = createMask(RGB, band)
+function [obj] = createMask(RGB, band)
 %createMask  Threshold RGB image using auto-generated code from colorThresholder app.
 %  [BW,MASKEDRGBIMAGE] = createMask(RGB) thresholds image RGB using
 %  auto-generated code from the colorThresholder App. The colorspace and
@@ -267,6 +267,7 @@ for i = 1:size(x,1)
     square = image.*uint8(mask);
     square =  square(y(i,1):y(i,2),x(i,1):x(i,2));
     square_bw = im2bw(square,0.5); % Parametro
+    square_bw = bwareaopen(square_bw, 500); % Parametro
 %     white = sum(sum(square_bw));
 %     black = size(square_bw,1)*size(square_bw,2)-white;
 %     if(white>0.3*black) % Controllare
@@ -279,10 +280,11 @@ for i = 1:size(x,1)
     inv_BW = inv_BW + mask;
 end
 
-inv_BW2 = imerode(inv_BW,strel('square',5));
+inv_BW2 = imerode(blackwhite_BW,strel('square',5));
 inv_BW2 = imerode(inv_BW2,strel('line',5,45));
 inv_BW2 = imerode(inv_BW2,strel('line',5,90+45));
-inv_BW2 = bwareaopen(inv_BW2, 200); % Parametro
+blackwhite_BW = bwareaopen(blackwhite_BW, 100);
+inv_BW2 = blackwhite_BW;%bwareaopen(inv_BW2, 200); % Parametro
 CC = bwconncomp(inv_BW2);
 for i = 1:size(CC.PixelIdxList,2)
     BW_TMP = false(size(blackwhite_BW));
@@ -293,7 +295,7 @@ for i = 1:size(CC.PixelIdxList,2)
     white = sum(sum(img));
     black = size(img,1)*size(img,2);
     %figure, subplot(211); imshow(img);
-    if(white<0.55*black && black>500)
+    if(white<0.55*black && black>500  && black<10000)
         img_fill = img |rot90(img,2);
         img_fill = imfill(img_fill,'holes');
         %subplot(212); imshow(img_fill);        
@@ -305,18 +307,19 @@ obj.black_white = blackwhite_BW;
 inv_BW2 = imerode(inv_BW,strel('square',5));
 inv_BW2 = imerode(inv_BW2,strel('line',5,45));
 inv_BW2 = imerode(inv_BW2,strel('line',5,90+45));
-inv_BW2 = bwareaopen(inv_BW2, 200); % Parametro
+inv_BW = bwareaopen(inv_BW, 100);
+inv_BW2 = inv_BW;%bwareaopen(inv_BW2, 200); % Parametro
 CC = bwconncomp(inv_BW2);
 for i = 1:size(CC.PixelIdxList,2)
     BW_TMP = false(size(blackwhite_BW));
     BW_TMP(CC.PixelIdxList{i}) = 1;
     s = regionprops(BW_TMP,'BoundingBox');
     img = imcrop(BW_TMP,s.BoundingBox);
-    imgext = [zeros(1,size(img,2)+2); zeros(size(img,1),1), img, zeros(size(img,1),1); zeros(1,size(img,2)+2)];    
+    toFlip = isTriangle(img);
     white = sum(sum(img));
     black = size(img,1)*size(img,2);    
     figure, subplot(211); imshow(img);
-    if(white<0.6*black && black>500)
+    if(white<0.6*black && black>500 && black<10000 && toFlip)
         img_fill = img |rot90(img,2);
         img_fill = imfill(img_fill,'holes');
         subplot(212); imshow(img_fill);        
@@ -326,16 +329,67 @@ end
 obj.inv_color_mask = inv_BW;
 
 close all;
+BW_edge = edge(BW);
+inv_BW_edge = edge(inv_BW);
+BW(BW_edge) = 0;
+inv_BW(BW_edge) = 0;
+BW(inv_BW_edge) = 0;
+inv_BW(inv_BW_edge) = 0;
+
 DT = bwdist(~BW,'chessboard');
 inv_DT = bwdist(~inv_BW,'chessboard');
 %imshow(inv_DT,[],'InitialMagnification','fit')
 bwD1 = DT>4;
 bwD2 = inv_DT>4;
-bwD = bwD1 | bwD2;
+bwD = DT | inv_DT;
 bwD = bwareaopen(bwD, 50); % Parametro
 
 for i = 1:size(x,1)
     chess = bwD(y(i,1):y(i,2),x(i,1):x(i,2));
+    condition = true;
+    while condition
+        CC = bwconncomp(chess);
+        bb = regionprops(CC,'BoundingBox'); bboxCorr = zeros(1,size(bb,1));
+        for iter=1:size(bb,1)
+            BW_TMP = false(size(chess));
+            BW_TMP(CC.PixelIdxList{iter}) = 1;
+            s = regionprops(BW_TMP,'BoundingBox');
+            img = imcrop(BW_TMP,s.BoundingBox);
+            toCompare = bwconvhull(img);
+            bboxCorr(iter) = corr2(toCompare,img)
+        end
+        if(find(bboxCorr<0.72))
+            idx = find(bboxCorr<0.72);
+            tmp_chess = zeros(size(chess));
+            for k=1:size(idx)
+                tmp_chess(CC.PixelIdxList{idx(k)}) = 1;
+                chess(CC.PixelIdxList{idx(k)}) = 0;
+                %tmp_chess = imerode(tmp_chess,strel('square',2));
+                tmp_chess = bwdist(~tmp_chess,'chessboard');
+                tmp_chess = tmp_chess>1;
+                imshowpair(tmp_chess,chess,'falsecolor');
+                chess = chess | tmp_chess;
+                chess = bwareaopen(chess, 50);
+            end      
+        else
+            condition = false;
+        end        
+    end
+%     idx = find(chess == 1);
+%     [idx,idy]=ind2sub(size(chess),idx);
+%     j = boundary(idx,idy,0.1); % Parametro
+%     chess_square = poly2mask(idy(j),idx(j), size(chess,1), size(chess,2));  
+%     mask = chess_square&~chess;
+%     DT = bwdist(~mask,'euclidean');
+%     imshow(DT,[],'InitialMagnification','fit');
+%     DTT = zeros(size(DT));
+%     for ll=1:size(DTT,2)
+%        DTT(:,ll) = DTT(:,ll) | imregionalmax(DT(:,ll)); 
+%     end
+%     for ll=1:size(DTT,1)
+%        DTT(ll,:) = DTT(ll,:) | imregionalmax(DT(ll,:)); 
+%     end
+%       
     CC = bwconncomp(chess);
     s = regionprops(CC,'centroid');
     obj = putCenters(obj, x(i,1), y(i,1), s, i, size(chess,1)); 
@@ -404,7 +458,6 @@ for i = 1:size(x,1)
     for k=1:size(obj.chess(i).center_x,1)
         for j=1:size(obj.chess(i).center_x,2)
             scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j));
-            pause
         end
     end 
 end
@@ -566,7 +619,7 @@ centers = zeros(5,5,2,size(x,1));
 %     end
 % end
 
-maskedRGBImage = im2uint8(maskedRGBImage);
+obj.masked_rgb = im2uint8(maskedRGBImage);
 disp('ciao');
 close all;
 

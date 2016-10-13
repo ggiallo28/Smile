@@ -15,7 +15,7 @@ close all; clear all; clc;
 %     A = [A;K];
 % end
 
-orig = imread(['_DSC007',num2str(7),'.JPG']);
+orig = imread(['_DSC007',num2str(2),'.JPG']);
 I = imcrop(orig);
 % [edge_magnitude, edge_orientation] = coloredges(I);
 % img1=rgb2ycbcr(I);
@@ -44,52 +44,56 @@ I = im2uint8(K);
 % nColors = 7;
 % kmeans: http://stackoverflow.com/questions/25691735/matlab-color-based-segmentation
 %% Segmentazione
-[BW_red,inv_BW_red, RedImage, centers_red] = createMask(I,'red');
-[BW_green,inv_BW_green, GreenImage, centers_green] = createMask(I,'green');
-[BW_blue,inv_BW_blue, BlueImage, centers_blue] = createMask(I,'blue');
-[BW_yellow,inv_BW_yellow, YellowImage, centers_yellow] = createMask(I,'yellow');
-inv_BW = uint8(inv_BW_red|inv_BW_green|inv_BW_blue|inv_BW_yellow);
-col_BW = uint8(BW_red|BW_green|BW_blue|BW_yellow);
+obj_red = createMask(I,'red');
+obj_green = createMask(I,'green');
+obj_blue = createMask(I,'blue');
+obj_yellow = createMask(I,'yellow');
+inv_BW = uint8(obj_red.black_white|obj_green.black_white|obj_blue.black_white|obj_yellow.black_white);
+col_BW = uint8(obj_red.color_mask|obj_green.color_mask|obj_blue.color_mask|obj_yellow.color_mask);
 BW = 255*(inv_BW-col_BW);
-fuse = RedImage+GreenImage+BlueImage+YellowImage+repmat(BW,[1 1 3]);
+fuse = obj_red.masked_rgb+obj_green.masked_rgb+obj_blue.masked_rgb+obj_yellow.masked_rgb+repmat(BW,[1 1 3]);
 imshow(fuse); hold on;
-for i = 1:size(centers_red,4)
-    for k=1:5
-        for j=1:5
-            scatter(centers_red(k,j,1,i),centers_red(k,j,2,i)) % Riferimento Y verso il basso
+obj = obj_red;
+for i = 1:size(obj.chess,2)
+    for k=1:size(obj.chess(i).center_x,1)
+        for j=1:size(obj.chess(i).center_x,2)
+            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
         end
     end
 end
-for i = 1:size(centers_green,4)
-    for k=1:5
-        for j=1:5
-            scatter(centers_green(k,j,1,i),centers_green(k,j,2,i)) % Riferimento Y verso il basso
+obj = obj_green;
+for i = 1:size(obj.chess,2)
+    for k=1:size(obj.chess(i).center_x,1)
+        for j=1:size(obj.chess(i).center_x,2)
+            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
         end
     end
 end
-for i = 1:size(centers_yellow,4)
-    for k=1:5
-        for j=1:5
-            scatter(centers_yellow(k,j,1,i),centers_yellow(k,j,2,i)) % Riferimento Y verso il basso
+obj = obj_blue;
+for i = 1:size(obj.chess,2)
+    for k=1:size(obj.chess(i).center_x,1)
+        for j=1:size(obj.chess(i).center_x,2)
+            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
         end
     end
 end
-for i = 1:size(centers_blue,4)
-    for k=1:5
-        for j=1:5
-            scatter(centers_blue(k,j,1,i),centers_blue(k,j,2,i)) % Riferimento Y verso il basso
+obj = obj_yellow;
+for i = 1:size(obj.chess,2)
+    for k=1:size(obj.chess(i).center_x,1)
+        for j=1:size(obj.chess(i).center_x,2)
+            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
         end
     end
 end
 hold off;
 %% Fissa il centro degli assi
-BW = uint8(255*(inv_BW_red-BW_red));
-Red = RedImage+repmat(BW,[1 1 3]);
-BW = uint8(255*(inv_BW_yellow-BW_yellow));
-Yellow = YellowImage+repmat(BW,[1 1 3]);
-ry = Red+Yellow;
-
-img = (circshift(Yellow,1)-circshift(Yellow,-1))+(circshift(Red,1)-circshift(Red,-1));
+% BW = uint8(255*(inv_BW_red-BW_red));
+% Red = RedImage+repmat(BW,[1 1 3]);
+% BW = uint8(255*(inv_BW_yellow-BW_yellow));
+% Yellow = YellowImage+repmat(BW,[1 1 3]);
+% ry = Red+Yellow;
+% 
+% img = (circshift(Yellow,1)-circshift(Yellow,-1))+(circshift(Red,1)-circshift(Red,-1));
  
 % imshowpair(Red,Yellow,'Montage');
 % col = 15;
@@ -167,3 +171,5 @@ img = (circshift(Yellow,1)-circshift(Yellow,-1))+(circshift(Red,1)-circshift(Red
 % set(gcf, 'Units', 'Normalized', 'OuterPosition', [0 0 1 1]);
 % % Give a name to the title bar.
 % set(gcf, 'Name', 'Demo by ImageAnalyst', 'NumberTitle', 'Off') 
+
+
