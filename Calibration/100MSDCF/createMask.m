@@ -219,6 +219,7 @@ end
 obj = objBlobs(band);
 obj.color_mask = BW;
 
+%% Separazione delle chessboard
 split = sum(BW);
 split = find(split~=0);
 x = []; x(1,1) = split(1); k = 1;
@@ -239,6 +240,7 @@ end
 obj.bbox_x = x;
 obj.bbox_y = y;
 
+%% Calcolo della chessboard complementare
 inv_BW = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
 blackwhite_BW = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
 for i = 1:size(x,1)
@@ -268,34 +270,22 @@ for i = 1:size(x,1)
     square =  square(y(i,1):y(i,2),x(i,1):x(i,2));
     square_bw = im2bw(square,0.5); % Parametro
     square_bw = bwareaopen(square_bw, 500); % Parametro
-%     white = sum(sum(square_bw));
-%     black = size(square_bw,1)*size(square_bw,2)-white;
-%     if(white>0.3*black) % Controllare
-%         blackwhite_BW = blackwhite_BW + mask;
-%         isWhite = true;
-%     else
-%         blackwhite_BW(mask) = 0;
-%     end
     blackwhite_BW(y(i,1):y(i,2),x(i,1):x(i,2)) = blackwhite_BW(y(i,1):y(i,2),x(i,1):x(i,2)) + square_bw;
     inv_BW = inv_BW + mask;
 end
 
-inv_BW2 = imerode(blackwhite_BW,strel('square',5));
-inv_BW2 = imerode(inv_BW2,strel('line',5,45));
-inv_BW2 = imerode(inv_BW2,strel('line',5,90+45));
-blackwhite_BW = bwareaopen(blackwhite_BW, 100);
-inv_BW2 = blackwhite_BW;%bwareaopen(inv_BW2, 200); % Parametro
-CC = bwconncomp(inv_BW2);
+%% Calcolo del background
+CC = bwconncomp(blackwhite_BW);
 for i = 1:size(CC.PixelIdxList,2)
     BW_TMP = false(size(blackwhite_BW));
     BW_TMP(CC.PixelIdxList{i}) = 1;
     s = regionprops(BW_TMP,'BoundingBox');
     img = imcrop(BW_TMP,s.BoundingBox); 
-    %% TROVARE UN MODO PER CONTARE I CONTORNI
+    toFlip = isTriangle(img);
     white = sum(sum(img));
-    black = size(img,1)*size(img,2);
+    black = size(img,1)*size(img,2); 
     %figure, subplot(211); imshow(img);
-    if(white<0.55*black && black>500  && black<10000)
+    if(white<0.6*black && black>500 && black<10000 && toFlip)
         img_fill = img |rot90(img,2);
         img_fill = imfill(img_fill,'holes');
         %subplot(212); imshow(img_fill);        
@@ -304,49 +294,23 @@ for i = 1:size(CC.PixelIdxList,2)
 end
 obj.black_white = blackwhite_BW;
 
-inv_BW2 = imerode(inv_BW,strel('square',5));
-inv_BW2 = imerode(inv_BW2,strel('line',5,45));
-inv_BW2 = imerode(inv_BW2,strel('line',5,90+45));
-inv_BW = bwareaopen(inv_BW, 100);
-inv_BW2 = inv_BW;%bwareaopen(inv_BW2, 200); % Parametro
-CC = bwconncomp(inv_BW2);
-for i = 1:size(CC.PixelIdxList,2)
-    BW_TMP = false(size(blackwhite_BW));
-    BW_TMP(CC.PixelIdxList{i}) = 1;
-    s = regionprops(BW_TMP,'BoundingBox');
-    img = imcrop(BW_TMP,s.BoundingBox);
-    toFlip = isTriangle(img);
-    white = sum(sum(img));
-    black = size(img,1)*size(img,2);    
-    figure, subplot(211); imshow(img);
-    if(white<0.6*black && black>500 && black<10000 && toFlip)
-        img_fill = img |rot90(img,2);
-        img_fill = imfill(img_fill,'holes');
-        subplot(212); imshow(img_fill);        
-        inv_BW(s.BoundingBox(2):s.BoundingBox(2)+s.BoundingBox(4),s.BoundingBox(1):s.BoundingBox(1)+s.BoundingBox(3)) = img_fill; 
-    end
-end
-obj.inv_color_mask = inv_BW;
-
-close all;
+%% Separazione delle Tessere
+BW = bwareaopen(BW, 50); % Parametro
+inv_BW = bwareaopen(inv_BW, 50); % Parametro
 BW_edge = edge(BW);
+assert(sum(sum(inv_BW&BW))==0);
 inv_BW_edge = edge(inv_BW);
-BW(BW_edge) = 0;
-inv_BW(BW_edge) = 0;
-BW(inv_BW_edge) = 0;
-inv_BW(inv_BW_edge) = 0;
-
-DT = bwdist(~BW,'chessboard');
-inv_DT = bwdist(~inv_BW,'chessboard');
-%imshow(inv_DT,[],'InitialMagnification','fit')
-bwD1 = DT>4;
-bwD2 = inv_DT>4;
-bwD = DT | inv_DT;
+eedge = imdilate(BW_edge|inv_BW_edge,strel('square',3));
+eedge = imerode(eedge,strel('square',2));
+BW(eedge) = 0;
+inv_BW(eedge) = 0;
+bwD = BW | inv_BW;
 bwD = bwareaopen(bwD, 50); % Parametro
 
 for i = 1:size(x,1)
     chess = bwD(y(i,1):y(i,2),x(i,1):x(i,2));
     condition = true;
+    figure
     while condition
         CC = bwconncomp(chess);
         bb = regionprops(CC,'BoundingBox'); bboxCorr = zeros(1,size(bb,1));
@@ -369,33 +333,56 @@ for i = 1:size(x,1)
                 tmp_chess = tmp_chess>1;
                 imshowpair(tmp_chess,chess,'falsecolor');
                 chess = chess | tmp_chess;
-                chess = bwareaopen(chess, 50);
+                chess = bwareaopen(chess, 100);
             end      
         else
             condition = false;
         end        
     end
-%     idx = find(chess == 1);
-%     [idx,idy]=ind2sub(size(chess),idx);
-%     j = boundary(idx,idy,0.1); % Parametro
-%     chess_square = poly2mask(idy(j),idx(j), size(chess,1), size(chess,2));  
-%     mask = chess_square&~chess;
-%     DT = bwdist(~mask,'euclidean');
-%     imshow(DT,[],'InitialMagnification','fit');
-%     DTT = zeros(size(DT));
-%     for ll=1:size(DTT,2)
-%        DTT(:,ll) = DTT(:,ll) | imregionalmax(DT(:,ll)); 
-%     end
-%     for ll=1:size(DTT,1)
-%        DTT(ll,:) = DTT(ll,:) | imregionalmax(DT(ll,:)); 
-%     end
-%       
+    bwD(y(i,1):y(i,2),x(i,1):x(i,2))=chess;
+end
+
+L = bwlabel(bwD);
+RGB = label2rgb(L);
+imshow(RGB);
+
+%% Fix dei triangoli
+CC = bwconncomp(bwD);
+for i = 1:size(CC.PixelIdxList,2)
+    BW_TMP = false(size(blackwhite_BW));
+    BW_TMP(CC.PixelIdxList{i}) = 1;
+    s = regionprops(BW_TMP,'BoundingBox');
+    img = imcrop(BW_TMP,s.BoundingBox);
+    toFlip = isTriangle(img);
+    white = sum(sum(img));
+    black = size(img,1)*size(img,2);    
+    figure, subplot(211); imshow(img);
+    if(white<0.6*black && black>500 && black<10000 && toFlip)
+        img_fill = img |rot90(img,2);
+        img_fill = imfill(img_fill,'holes');
+        subplot(212); imshow(img_fill);
+        img_fill = img_fill(4:end-3,4:end-3);
+        bwD((s.BoundingBox(2)+3):(s.BoundingBox(2)+s.BoundingBox(4)-3),(s.BoundingBox(1)+3):(s.BoundingBox(1)+s.BoundingBox(3)-3)) = img_fill; 
+    end
+end
+inv_BW = bwD-BW;
+obj.inv_color_mask = inv_BW;
+
+
+for i = 1:size(x,1)
+    chess = bwD(y(i,1):y(i,2),x(i,1):x(i,2));
+    chess = bwareaopen(chess, 50); % Parametro
+    figure, imshow(chess);
     CC = bwconncomp(chess);
     s = regionprops(CC,'centroid');
     obj = putCenters(obj, x(i,1), y(i,1), s, i, size(chess,1)); 
+%     centroids = cat(1, s.Centroid);
+%     %Display original image and superimpose centroids.
+%     hold on
+%     plot(centroids(:,1), centroids(:,2), 'r*')    
 end
-
-imshow(BW); hold on;
+close all;
+figure,imshow(BW); hold on;
 for i = 1:size(x,1)
     X = obj.chess(i).center_x;
     Y = obj.chess(i).center_y;
@@ -474,7 +461,7 @@ end
 % 
 % 
 % 
-centers = zeros(5,5,2,size(x,1));
+% centers = zeros(5,5,2,size(x,1));
 % for i = 1:size(x,1)
 %     color = BW(y(i,1):y(i,2),x(i,1):x(i,2));
 %     color = imclose(color,strel('disk', 3));
