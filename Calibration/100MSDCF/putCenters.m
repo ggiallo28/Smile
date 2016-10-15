@@ -8,6 +8,7 @@ function obj = putCenters(obj, xOffset, yOffset, centers, index, img_dim)
         x(i) = v(1);
         y(i) = v(2);
     end 
+    obj.chess(index).centroid = [xOffset+mean(x), yOffset+mean(y)];
     th = floor(img_dim/10);  
     v = [];
     for k=floor(img_dim/10):2*floor(img_dim/10):img_dim

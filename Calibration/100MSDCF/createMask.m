@@ -240,9 +240,10 @@ end
 obj.bbox_x = x;
 obj.bbox_y = y;
 
-%% Calcolo della chessboard complementare
+%% Calcolo della chessboard complementare & background
 inv_BW = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
 blackwhite_BW = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
+colors = [{''}];
 for i = 1:size(x,1)
     mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
     mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
@@ -271,10 +272,15 @@ for i = 1:size(x,1)
     square_bw = im2bw(square,0.5); % Parametro
     square_bw = bwareaopen(square_bw, 500); % Parametro
     blackwhite_BW(y(i,1):y(i,2),x(i,1):x(i,2)) = blackwhite_BW(y(i,1):y(i,2),x(i,1):x(i,2)) + square_bw;
+    if(sum(sum(bwconvhull(square_bw)))>0.2*size(square_bw,1)*size(square_bw,2))
+        colors(i) = {'White'};
+    else
+        colors(i) = {'Black'};
+    end
     inv_BW = inv_BW + mask;
 end
 
-%% Calcolo del background
+%% Fix dei triangoli del background
 CC = bwconncomp(blackwhite_BW);
 for i = 1:size(CC.PixelIdxList,2)
     BW_TMP = false(size(blackwhite_BW));
@@ -320,7 +326,7 @@ for i = 1:size(x,1)
             s = regionprops(BW_TMP,'BoundingBox');
             img = imcrop(BW_TMP,s.BoundingBox);
             toCompare = bwconvhull(img);
-            bboxCorr(iter) = corr2(toCompare,img)
+            bboxCorr(iter) = corr2(toCompare,img);
         end
         if(find(bboxCorr<0.72))
             idx = find(bboxCorr<0.72);
@@ -346,7 +352,7 @@ L = bwlabel(bwD);
 RGB = label2rgb(L);
 imshow(RGB);
 
-%% Fix dei triangoli
+%% Fix dei triangoli della machera complementare
 CC = bwconncomp(bwD);
 for i = 1:size(CC.PixelIdxList,2)
     BW_TMP = false(size(blackwhite_BW));
@@ -378,6 +384,7 @@ for i = 1:size(x,1)
     obj = putCenters(obj, x(i,1), y(i,1), s, i, size(chess,1));
     obj.chess(i).mask = false(size(bwD));
     obj.chess(i).mask(y(i,1):y(i,2),x(i,1):x(i,2)) = chess;
+    obj.chess(i).background = colors(i);
 %     centroids = cat(1, s.Centroid);
 %     %Display original image and superimpose centroids.
 %     hold on

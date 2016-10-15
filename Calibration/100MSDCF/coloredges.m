@@ -1,4 +1,4 @@
-function [edge_magnitude, edge_orientation] = coloredges(im)
+function [edge_magnitude, edge_orientation, Jx, Jy, Jxy] = coloredges(im)
 %COLOREDGES Edges of a color image by the max gradient method.
 %   [MAGNITUDE, ORIENTATION] = COLOREDGES(IMAGE)
 %   Extracts the edges of a color image without converting it to grayscale.
@@ -59,7 +59,7 @@ function [edge_magnitude, edge_orientation] = coloredges(im)
 	
 	%smoothed partial derivatives using sobel filter (could use any other)
 	im = single(im) / 255;
-	yfilter = fspecial('sobel');
+	yfilter = fspecial('prewit');
 	xfilter = yfilter';
     cymk = rgb2cmyk(im);
     
