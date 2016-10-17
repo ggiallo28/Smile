@@ -222,6 +222,9 @@ obj.color_mask = BW;
 %% Separazione delle chessboard
 split = sum(BW);
 split = find(split~=0);
+if size(split,2) == 0
+    return;
+end
 x = []; x(1,1) = split(1); k = 1;
 for i=2:size(split,2)
     if(abs(split(i-1)-split(i))>1)
