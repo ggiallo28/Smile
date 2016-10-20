@@ -353,12 +353,6 @@ end
 %     pause
 % end
 %% Full Mask
-cymk = rgb2cmyk(I);
-Cyano = im2double(cymk(:,:,1));
-Magenta = im2double(cymk(:,:,2));
-Yellow = im2double(cymk(:,:,3));
-TheColors = Cyano+Magenta+Yellow;
-Key = im2double(cymk(:,:,4));
 FullMask = maskCI+maskL1I+maskL2I+maskR1I+maskR2I;
 BlurredMask = imgaussfilt(FullMask,10);
 %% Fissa il centro degli assi
@@ -397,7 +391,26 @@ end
 left = edge(LEFTMASK);
 right = edge(RIGHTMASK);
 center_axis = left & right;
-imshow(center_axis);
+left_center_axis = center_axis.*(maskL1I|maskL2I);
+idx = find(left_center_axis == 1);
+[idy,idx] = ind2sub(size(RIGHTMASK),idx);
+[left_fitresult, left_gof] = createFit(idx, idy);
+
+right_center_axis = center_axis.*(maskR1I|maskR2I);
+idx = find(right_center_axis == 1);
+[idy,idx] = ind2sub(size(RIGHTMASK),idx);
+[right_fitresult, right_gof] = createFit(idx, idy);
+
+mid_center_axis = center_axis.*(maskCI);
+idx = find(mid_center_axis == 1);
+[idy,idx] = ind2sub(size(RIGHTMASK),idx);
+[mid_fitresult, mid_gof] = createFit(idx, idy);
+
+imshow(I); hold on; 
+plot(left_fitresult,'b'); 
+plot(right_fitresult,'r'); 
+plot(mid_fitresult, 'y'); hold off
+legend('left axis', 'right axis', 'center axis');
 %% Corner
 cymk = rgb2cmyk(I);
 Cyano = im2double(cymk(:,:,1));
@@ -408,12 +421,8 @@ Key = im2double(cymk(:,:,4));
 
 KEY = (1-Key).*FullMask;
 ORIG = rgb2gray(im2double(O)).*FullMask;
+img_filtered = 0.5*(absimfilter(KEY,fspecial('prewit')) + absimfilter(ORIG,fspecial('prewit')));
 
-x_filter = fspecial('prewit');
-y_filter = x_filter';
-filtered_x = 0.5*(absimfilter(KEY,x_filter) + absimfilter(ORIG,x_filter));
-filtered_y = 0.5*(absimfilter(KEY,y_filter) + absimfilter(ORIG,y_filter));
-img_filtered = sqrt(filtered_y.^2 + filtered_x.^2);
 bw = im2bw(img_filtered,graythresh(img_filtered));
 bw = bwareaopen(bw, 100); % Parametro
 for k=1:5
@@ -429,17 +438,48 @@ for k=1:5
         case 5
             mask = maskR2I;
     end
-    bw_edge = filledgegaps(bw.*mask+edge(mask),1);
+    mask = imerode(mask,strel('rectangle',[7 2]));
+    bw_edge = filledgegaps(bw.*mask,1);
     CC = bwconncomp(~bw_edge,4);
     for i=1:size(CC.PixelIdxList,2)
-        size(CC.PixelIdxList{i},1)
         if(size(CC.PixelIdxList{i},1)<40)
             bw_edge(CC.PixelIdxList{i}) = 1;
         end
     end
-    bw_edge = filledgegaps(bw_edge,1);    
-    [rj, cj, re, ce] = findendsjunctions(bw_edge, 1,k);   
-    figure, imshow([bw_edge;ORIG.*mask]);
+    bw_edge = filledgegaps(bw_edge,1);  
+    horizontalEdgeImage = imfilter(bw_edge, [-1 0 1]);
+    horizontalEdgeImage = bwareaopen(horizontalEdgeImage, 50); % Parametro
+    horizontalEdgeImage = filledgegaps(horizontalEdgeImage,5);
+    CCo = bwconncomp(horizontalEdgeImage,8);
+    imshow(I); hold on;
+    for i = 1:size(CCo.PixelIdxList,2)
+        [idy,idx] = ind2sub(size(I),CCo.PixelIdxList{i});
+        [oriz_fitresult, oriz_gof] = createFit(idx, idy);
+        plot(oriz_fitresult,'b'); 
+    end
+    % Se la distanza tra due rette e minore di una soglia allora sono la
+    % stessa retta, riusa i punti per farne una nuova
+%     [idy,idx] = ind2sub(size(I),CCo.PixelIdxList{1}); [idy1,idx1] = ind2sub(size(I),CCo.PixelIdxList{2});
+%     [oriz_fitresult, oriz_gof] = createFit([idx;idx1], [idy;idy1]);
+%     imshow(I); hold on; plot(oriz_fitresult,'b'); 
+%     pause 
+% usare prima le rette per unire pezzi spuri di contorni e poi interpolare
+    verticalEdgeImage   = imfilter(bw_edge, [-1 0 1]');
+    verticalEdgeImage = bwareaopen(verticalEdgeImage, 10); % Parametro
+    verticalEdgeImage = filledgegaps(verticalEdgeImage,5);
+    verticalEdgeImage = bwareaopen(verticalEdgeImage, 100); % Parametro
+    CCv = bwconncomp(verticalEdgeImage,8);    
+    for i = 1:size(CCv.PixelIdxList,2)
+        [idy,idx] = ind2sub(size(I),CCv.PixelIdxList{i});
+        [oriz_fitresult, oriz_gof] = createFit1(idx, idy);
+        plot(oriz_fitresult,'b'); 
+    end
+
+%     imshowpair(horizontalEdgeImage,verticalEdgeImage,'falsecolor')
+%     
+%     
+%     [rj, cj, re, ce] = findendsjunctions(bw_edge, 1,k);   
+%     figure, imshow([bw_edge;ORIG.*mask]);
 end
 
 
