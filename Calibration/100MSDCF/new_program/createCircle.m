@@ -1,4 +1,4 @@
-function [fitresult, gof] = createFit1(idx, idy)
+function [fitresult, gof] = createCircle(idx, idy)
 %CREATEFIT2(IDX,IDY)
 %  Create a fit.
 %
@@ -20,7 +20,7 @@ function [fitresult, gof] = createFit1(idx, idy)
 % Set up fittype and options.
 ft = fittype( 'poly6' );
 opts = fitoptions( 'Method', 'LinearLeastSquares' );
-opts.Normalize = 'on';
+opts.Normalize = 'off';
 opts.Robust = 'Bisquare';
 
 % Fit model to data.

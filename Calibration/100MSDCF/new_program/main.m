@@ -79,7 +79,7 @@ for l=1:size(obj_chess,1)
     end
 end
 % Adds label
-label = cell(3,k-1); k =1;
+label = cell(4,k-1); k =1;
 for l=1:size(obj_chess,1)
     for i = 1:size(obj_chess(l).chess,2)
         label(1,k) = cellstr(obj_chess(l).name);
@@ -124,7 +124,7 @@ for l=1:size(obj_chess,1)
     if(left >= 2 && right == 1)
        idx = find(strcmp(arr,positions(1)));
        obj_chess(l).chess(idx(1)).type = types(2);
-       obj_chess(l).chess(idx(2)).type = types(1);
+       obj_chess(l).chess(idx(2)).type = types(1); 
        idx = find(strcmp(arr,positions(3)));
        obj_chess(l).chess(idx(1)).type = types(1);
     end
@@ -193,9 +193,13 @@ for l=1:size(obj_chess,1)
         end
     end
 end
-
 imshow(maskCenter|maskLeft|maskRight)
 figure, imshow(enlarged);
+for j=1:size(order,2)
+    idx_chess_vector = order(1,j);
+    idx_color_chess = order(2,j);
+    label(4,j) = obj_chess(idx_chess_vector).chess(idx_color_chess).type;
+end
 %% Seprazione Riflessi
 maskC  = false(size(fuse,1),size(fuse,2));
 maskL1 = false(size(fuse,1),size(fuse,2));
@@ -394,22 +398,22 @@ center_axis = left & right;
 left_center_axis = center_axis.*(maskL1I|maskL2I);
 idx = find(left_center_axis == 1);
 [idy,idx] = ind2sub(size(RIGHTMASK),idx);
-[left_fitresult, left_gof] = createFit(idx, idy);
+[left_fitresult, left_gof] = createLine(idx, idy);
 
 right_center_axis = center_axis.*(maskR1I|maskR2I);
 idx = find(right_center_axis == 1);
 [idy,idx] = ind2sub(size(RIGHTMASK),idx);
-[right_fitresult, right_gof] = createFit(idx, idy);
+[right_fitresult, right_gof] = createLine(idx, idy);
 
 mid_center_axis = center_axis.*(maskCI);
 idx = find(mid_center_axis == 1);
 [idy,idx] = ind2sub(size(RIGHTMASK),idx);
-[mid_fitresult, mid_gof] = createFit(idx, idy);
+[mid_fitresult, mid_gof] = createLine(idx, idy);
 
 imshow(I); hold on; 
 plot(left_fitresult,'b'); 
 plot(right_fitresult,'r'); 
-plot(mid_fitresult, 'y'); hold off
+plot(mid_fitresult, 'y');
 legend('left axis', 'right axis', 'center axis');
 %% Corner
 cymk = rgb2cmyk(I);
@@ -419,12 +423,18 @@ Yellow = im2double(cymk(:,:,3));
 TheColors = Cyano+Magenta+Yellow;
 Key = im2double(cymk(:,:,4));
 
-KEY = (1-Key).*FullMask;
-ORIG = rgb2gray(im2double(O)).*FullMask;
-img_filtered = 0.5*(absimfilter(KEY,fspecial('prewit')) + absimfilter(ORIG,fspecial('prewit')));
+KEY = (1-Key);
+ORIG = rgb2gray(im2double(O));
+[key_filtered, key_filtered_x, key_filtered_y] = absimfilter(KEY,fspecial('prewit'));
+[orig_filtered, orig_filtered_x, orig_filtered_y] = absimfilter(ORIG,fspecial('prewit'));
+img_filtered = 0.5*(key_filtered+orig_filtered);
 
-bw = im2bw(img_filtered,graythresh(img_filtered));
+bw = im2bw(img_filtered,graythresh(img_filtered.*FullMask));
 bw = bwareaopen(bw, 100); % Parametro
+grid_image = false(size(bw));
+horizontalCell = cell(5,20);
+verticalCell = cell(5,20);
+pointsArray = struct();
 for k=1:5
     switch(k)
         case 1
@@ -438,7 +448,8 @@ for k=1:5
         case 5
             mask = maskR2I;
     end
-    mask = imerode(mask,strel('rectangle',[7 2]));
+    mask = imdilate(mask,strel('rectangle',[2 12]));
+    mask = imerode(mask,strel('rectangle',[14 2]));
     bw_edge = filledgegaps(bw.*mask,1);
     CC = bwconncomp(~bw_edge,4);
     for i=1:size(CC.PixelIdxList,2)
@@ -446,75 +457,386 @@ for k=1:5
             bw_edge(CC.PixelIdxList{i}) = 1;
         end
     end
-    bw_edge = filledgegaps(bw_edge,1);  
-    horizontalEdgeImage = imfilter(bw_edge, [-1 0 1]);
-    horizontalEdgeImage = bwareaopen(horizontalEdgeImage, 50); % Parametro
-    horizontalEdgeImage = filledgegaps(horizontalEdgeImage,5);
-    CCo = bwconncomp(horizontalEdgeImage,8);
-    imshow(I); hold on;
-    for i = 1:size(CCo.PixelIdxList,2)
-        [idy,idx] = ind2sub(size(I),CCo.PixelIdxList{i});
-        [oriz_fitresult, oriz_gof] = createFit(idx, idy);
-        plot(oriz_fitresult,'b'); 
+    bw_edge = filledgegaps(bw_edge,1);     
+    horizontalEdgeImage = imfilter(bw_edge, [-1 0 1]');
+    horizontalEdgeImage = bwareaopen(horizontalEdgeImage, 10); % Parametro
+    horizontalEdgeImage = filledgegaps(horizontalEdgeImage,9);
+    horizontalEdgeImage = bwareaopen(horizontalEdgeImage, 100); % Parametro
+    CCh = bwconncomp(horizontalEdgeImage,8);
+    horizontal_image = false(size(horizontalEdgeImage));
+    for i = 1:size(CCh.PixelIdxList,2)
+        [idy,idx] = ind2sub(size(I),CCh.PixelIdxList{i});      
+        [horizonta_fitresult, horiz_gof] = createCircle(idx, idy);
+        coeffs = coeffvalues(horizonta_fitresult);
+        x = 1:size(horizontalEdgeImage,2);
+        y = round(polyval(coeffs,x));
+        x(y<1 | y>size(horizontalEdgeImage,1)) = [];
+        y(y<1 | y>size(horizontalEdgeImage,1)) = [];
+        for j = 1:size(x,2)
+            horizontal_image(y(j),x(j)) = 1;
+        end
+        plot(x,y,'k'); 
+        horizontalCell{k,i} = horizonta_fitresult;
     end
-    % Se la distanza tra due rette e minore di una soglia allora sono la
-    % stessa retta, riusa i punti per farne una nuova
+    grid_image = grid_image | horizontal_image;
+    tmp_grid_image = horizontal_image;
+    horizontal_image = imdilate(horizontal_image,strel('disk',2));
+    verticalEdgeImage = imfilter(bw_edge, [-1 0 1]);
+    verticalEdgeImage = bwareaopen(verticalEdgeImage, 50); % Parametro
+    verticalEdgeImage = (verticalEdgeImage - horizontal_image)>0;
+    verticalEdgeImage = filledgegapsel(verticalEdgeImage,2,6);
+    verticalEdgeImage = bwareaopen(verticalEdgeImage, 100); % Parametro
+    CCv = bwconncomp(verticalEdgeImage,8);
+    vertical_image = false(size(verticalEdgeImage));
+    for i = 1:size(CCv.PixelIdxList,2)
+        [idy,idx] = ind2sub(size(I),CCv.PixelIdxList{i});
+        [vertical_fitresult, vert_gof] = createLine(idy, idx);
+        coeffs = coeffvalues(vertical_fitresult);
+        y = 1:0.01:size(verticalEdgeImage,1);
+        x = polyval(coeffs,y);
+        for j = 1:size(x,2)
+            vertical_image(round(y(j)),round(x(j))) = 1;
+        end
+        plot(x,y,'k');
+        verticalCell{k,i} = vertical_fitresult;
+    end
+    grid_image = grid_image | vertical_image;   
+%     Se la distanza tra due rette e minore di una soglia allora sono la
+%     stessa retta, riusa i punti per farne una nuova, oppure se si
+%     intersecano sull'immagine e sicuro un errore
 %     [idy,idx] = ind2sub(size(I),CCo.PixelIdxList{1}); [idy1,idx1] = ind2sub(size(I),CCo.PixelIdxList{2});
 %     [oriz_fitresult, oriz_gof] = createFit([idx;idx1], [idy;idy1]);
 %     imshow(I); hold on; plot(oriz_fitresult,'b'); 
 %     pause 
 % usare prima le rette per unire pezzi spuri di contorni e poi interpolare
-    verticalEdgeImage   = imfilter(bw_edge, [-1 0 1]');
-    verticalEdgeImage = bwareaopen(verticalEdgeImage, 10); % Parametro
-    verticalEdgeImage = filledgegaps(verticalEdgeImage,5);
-    verticalEdgeImage = bwareaopen(verticalEdgeImage, 100); % Parametro
-    CCv = bwconncomp(verticalEdgeImage,8);    
-    for i = 1:size(CCv.PixelIdxList,2)
-        [idy,idx] = ind2sub(size(I),CCv.PixelIdxList{i});
-        [oriz_fitresult, oriz_gof] = createFit1(idx, idy);
-        plot(oriz_fitresult,'b'); 
+     mask = imdilate(mask,strel('rectangle',[12 12]));
+     tmp_grid_image = (vertical_image | tmp_grid_image).*mask;
+     [y_rj_matrix, x_cj_matrix] = findIntersections(horizontalCell(k,:), verticalCell(k,:), mask);
+%     [rj, cj, ~, ~] = findendsjunctions(bw_edge.*mask, 0,k); % Eventualmente fare la media con questi per rendere il tutto più "preciso"
+     scatter(x_cj_matrix(:),y_rj_matrix(:));
+     pointsArray.x_points{k} = x_cj_matrix;
+     pointsArray.y_points{k} = y_rj_matrix;
+end
+% positions = [{'Left'} {'Center'} {'Right'}];
+% types = [{'Primary'} {'Secondary'} {'Real'}];
+%% Divido i punti per ogni componente
+% Scansioniamo le tessere, facciamo intersezione con le maschere di ogni
+% singola tessera, i punti che ricadono dell'intersezione vengono assegnati
+% alla tessera associata alla specifica maschera.
+% Per fare questo usiamo il vettore delle label e order creato
+% precedentemente per poter facilemente recuperare gli indici di riga e
+% colonna associati ad ogni singolo elemento.
+for k=1:5
+    switch(k)
+        case 1
+            mask = maskCI;
+            idx = find(strcmp(label(3,:),positions(2)));
+        case 2
+            mask = maskL1I;
+            idx = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(1)));
+        case 3
+            mask = maskL2I;
+            idx = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(2)));
+        case 4
+            mask = maskR1I;
+            idx = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(1)));
+        case 5
+            mask = maskR2I;
+            idx = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(2)));
     end
-
-%     imshowpair(horizontalEdgeImage,verticalEdgeImage,'falsecolor')
-%     
-%     
-%     [rj, cj, re, ce] = findendsjunctions(bw_edge, 1,k);   
-%     figure, imshow([bw_edge;ORIG.*mask]);
+    for i=1:size(idx,2)
+        idx_chess_vector = order(1,idx(i));
+        idx_color_chess = order(2,idx(i));
+        x_cj_matrix = pointsArray.x_points{k};
+        y_rj_matrix = pointsArray.y_points{k};
+        ch_mask = obj_chess(idx_chess_vector).chess(idx_color_chess).ch_mask;
+        w = find(sum(ch_mask) ~=0);
+        w_min_x = min(w); w_max_y = max(w);
+        check_matrix = false(size(x_cj_matrix));
+        for j=1:size(x_cj_matrix,1)
+            for q=1:size(x_cj_matrix,2)
+                if(x_cj_matrix(j,q)>=(w_min_x-10) && x_cj_matrix(j,q)<=(w_max_y+10)) % 10 pixel di tolleranza: Parametro, speriamo vada bene
+                    check_matrix(j,q) = true;
+                end
+            end
+        end
+        num_cols = mode(sum(check_matrix,2));
+        sum_cols = sum(check_matrix);
+        check_matrix = false(size(check_matrix)); % Fix, dobbiamo sempre prendere tutta una colonna, scegliamo il valore più frequente e completiamo
+        for j=1:num_cols
+            id = find(sum_cols ==max(sum_cols), 1 ); % prendi solo il primo
+            check_matrix(:,id) = 1;
+            sum_cols(id) = 0;
+        end    
+        y_rj_matrix_copy = y_rj_matrix.*check_matrix;
+        x_cj_matrix_copy = x_cj_matrix.*check_matrix;
+        id = find(y_rj_matrix_copy(1,:) == 0);
+        y_rj_matrix_copy(:,id) = [];
+        x_cj_matrix_copy(:,id) = [];
+        
+        obj_chess(idx_chess_vector).chess(idx_color_chess).intersections_x = x_cj_matrix_copy;
+        obj_chess(idx_chess_vector).chess(idx_color_chess).intersections_y = y_rj_matrix_copy;   
+        imshow([I;repmat(255.*ch_mask,1,1,3)]); hold on;
+        scatter(x_cj_matrix_copy(:),y_rj_matrix_copy(:));
+    end    
+end
+%% Padding delle matrici e allineamento
+% Per ogni combinazione colore/sfondo controlliamo quant'e il massimo
+% numero di colorre, aggiungiamo zeri alle matrici che hanno un numero
+% inferiore di colonne
+for l=1:size(obj_chess,1)
+    v = zeros(1,size(obj_chess(l).chess,2));
+    for q=1:size(obj_chess(l).chess,2)
+       v(q) = size(obj_chess(l).chess(q).intersections_x,2); 
+    end
+    max_v = max(v);
+    for q=1:size(obj_chess(l).chess,2)
+        num_col = size(obj_chess(l).chess(q).intersections_x,2);
+        num_row = size(obj_chess(l).chess(q).intersections_x,1);
+        if(num_col<max_v)
+            obj_chess(l).chess(q).intersections_x = ...
+                [obj_chess(l).chess(q).intersections_x, zeros(num_row,max_v-num_col)];
+            obj_chess(l).chess(q).intersections_y = ...
+                [obj_chess(l).chess(q).intersections_y, zeros(num_row,max_v-num_col)];
+        end
+        % Allineo a sinistra o a destra in funzione del fatto che ho un elemento a sinistra o a destra.
+        % Ciò mi è utile per tenere tutti i punti compatti verso il centro
+        % di ciò che è visibile sulla checherboard.
+        % Per capire se ho un elemento a sinistra controllo che a sinistra
+        % ci sia una griglia dello stesso tipo e nella stessa posizione
+        % della corrente.
+        % Per capire se ho un elemento a destra faccio la medesima cosa
+        % guardando a destra.
+        % Se abbiamo una griglia sinistra e una griglia destra sto vedendo
+        % tutta la griglia corrente, quindi non ha importanza in che
+        % direzione shifto.
+        % Una volta che gli elementi sono stati allineati in questo modo è
+        % sufficiente flippare le matrici associate ai riflessi primari,
+        % unico caso in cui abbiamo un'inversione.
+        % Gli indici di riga/colonna rappresentano le associazioni, abbiamo
+        % degli zeri dove l'associazione non esiste poichè il punto non
+        % risulta visibile.
+        % LABEL: Colore Foreground, Colore Background, Posizione, Tipo
+        % ORDER: Indice nel vettore obj_chess, Indice Chess, Centroide
+        idl = find(order(1,:)==l);
+        idq = find(order(2,:)==q);
+        idx_order = intersect(idl,idq);
+        if(hasLeft(label,idx_order))
+          obj_chess(l).chess(q).intersections_x = ...
+              allignleftdouble(obj_chess(l).chess(q).intersections_x);
+          obj_chess(l).chess(q).intersections_y = ...
+              allignleftdouble(obj_chess(l).chess(q).intersections_y);
+        end
+        if(hasRight(label,idx_order))
+           obj_chess(l).chess(q).intersections_x = ...
+               allignrightdouble(obj_chess(l).chess(q).intersections_x);
+           obj_chess(l).chess(q).intersections_y = ...
+               allignrightdouble(obj_chess(l).chess(q).intersections_y);
+        end
+        % positions = [{'Left'} {'Center'} {'Right'}];
+        % types = [{'Primary'} {'Secondary'} {'Real'}];
+        if(strcmp(label(4,idx_order),types(1)))
+           obj_chess(l).chess(q).intersections_x = ...
+               fliplr(obj_chess(l).chess(q).intersections_x);
+           obj_chess(l).chess(q).intersections_y = ...
+               fliplr(obj_chess(l).chess(q).intersections_y);
+        end
+    end
 end
 
+for l=1:size(obj_chess,1)
+    for i=1:size(obj_chess(l).chess(1).intersections_x,1)
+        for j=1:size(obj_chess(l).chess(1).intersections_x,2)
+            imshow(I); hold on;
+            vect_x = [];
+            vect_y = [];
+            for k =1:size(obj_chess(l).chess,2)
+                vect_x = [vect_x, obj_chess(l).chess(k).intersections_x(i,j)];
+                vect_y = [vect_y, obj_chess(l).chess(k).intersections_y(i,j)];
+            end
+            vect_x
+            vect_y
+            scatter(vect_x(:),vect_y(:)); hold off
+            pause
+        end
+    end
+end
 
+    % Allineamento a sinistra/destra delle matrici: operazione necessaria
+    % prima del flip per generare le corrispondenze.
+    % Flip a Destra: I valori nella matrice vanno allineati a sinistra.
+    % Flip a Sinistra: I valori nella matrice vanno allineati a destra.
+    % L'allineamento non può essere permanente, ma deve essere temporanemo
+    % dipende dalla direzione in cui si flippa 
+    % si portrebbe pensare di avere due matrici una allieata a sininstra
+    % per le rotazioni a destra, una allineata a destra per le rotazioni a
+    % sinistra
+    % inutile memorizzarle tutte e due, ne memorizziamo una l'altra si
+    % ricava e si usa temporaneamente per creare le associazioni
+    % per le associazioni utilizziamo un grafo, uno per ogni coppia
+    % colore/sfondo
 
-imshow(img_filtered);
-
-
-[rj, cj, re, ce] = findendsjunctions(img_filtered, 1);
-img_filtered(re,ce) = 0;
-
-
-
-
-
-imshow([filtered_x>0.05;MINRGB]);
-img_filtered = medfilt2(img_filtered,[10,10]);
-
-
-
-T = adaptthresh(TheColors,1,'ForegroundPolarity','bright');
-BW = imbinarize(TheColors,T);
-BW = imopen(BW & FullMask,strel('square',15));
-imshow(BW)
-
-
-
-
-
-figure
-imshow(BW)
-[Gx, Gy] = imgradientxy(R,'central');
-figure,
-imshowpair(Gx,Gy,'falsecolor');
-
-
-
-
-
+% for l=1:size(obj_chess,1)
+%     idx_color = find(strcmp(label(1,:),obj_chess(l).name));
+%     idx_bgwhite = find(strcmp(label(2,:),'White'));
+%     idx_bgblack = find(strcmp(label(2,:),'Black'));
+%     idx_center = find(strcmp(label(3,:),positions(2)));
+%     idx_bgwhite = intersect(idx_bgwhite,idx_color);
+%     idx_bgblack = intersect(idx_bgblack,idx_color);
+%     idx_center_bgwhite = intersect(idx_center,idx_bgwhite);
+%     idx_center_bgblack = intersect(idx_center,idx_bgblack);
+% 
+%     % Associa la centrale con le laterali
+%     for i=1:size(idx_bgwhite,2)
+%         if(idx_bgwhite(i) ~= idx_center_bgwhite)
+%             label_copy = label(:,idx_bgwhite(i)); % Colore Foreground, Colore Background, Posizione, Tipo
+%             order_copy = order(:,idx_bgwhite(i)); % Indice nel vettore obj_chess, Indice Chess, Centroide
+%             logical_matrix = logical(obj_chess(l).chess(order_copy(2)).intersections_x);
+%             logical_center = logical(obj_chess(l).chess(order(2,idx_center_bgwhite)).intersections_x);
+%                         hasLeft(label,idx_bgwhite(i));
+%             hasRight(label,idx_bgwhite(i));
+%             
+%             
+%             string = strcat(label_copy(3),label_copy(4));
+%             if iscell(string)
+%                 string = string{1};
+%             end
+%             string = lower(string) 
+%             obj_chess(l).name
+%             
+%             
+%             switch string
+%                 case 'leftsecondary'
+%                     [logical_matrix,shift_matrix] = allignright(logical_matrix);
+%                     index_logical_matrix = 1:size(logical_matrix,2);
+%                     [logical_center,shift_center] = allignleft(logical_center);
+%                     index_logical_center = index_logical_matrix;
+%                     overlap_matrix = logical_matrix & logical_center;
+%                     
+%                     index_logical_center(overlap_matrix(1,:) == 0) = [];
+%                     index_logical_matrix(overlap_matrix(1,:) == 0) = [];
+%                     
+%                     index_logical_center = index_logical_center - shift_center;
+%                     index_logical_matrix = index_logical_matrix - shift_matrix;
+%                     corrispondency = [index_logical_center;index_logical_matrix]
+%                 case 'leftprimary'
+%                     [logical_matrix,shift_matrix] = allignright(logical_matrix);
+%                     [logical_center,shift_center] = allignleft(logical_center);
+%                     logical_center = fliplr(logical_center);                    
+%                     index_logical_matrix = 1:size(logical_matrix,2);
+%                     index_logical_center = fliplr(1:size(logical_center,2));                
+%                     overlap_matrix = logical_matrix & logical_center;
+%                     
+%                     index_logical_center(overlap_matrix(1,:) == 0) = [];
+%                     index_logical_matrix(overlap_matrix(1,:) == 0) = [];
+%                     
+%                     index_logical_center = index_logical_center + shift_center;
+%                     index_logical_matrix = index_logical_matrix - shift_matrix;
+%                     corrispondency = [index_logical_center;index_logical_matrix]
+%                 case 'rightsecondary'
+%                     [logical_matrix,shift_matrix] = allignleft(logical_matrix);
+%                     index_logical_matrix = 1:size(logical_matrix,2);
+%                     [logical_center,shift_center] = allignleft(logical_center);
+%                     index_logical_center = index_logical_matrix;
+%                     overlap_matrix = logical_matrix & logical_center;
+%                     
+%                     index_logical_center(overlap_matrix(1,:) == 0) = [];
+%                     index_logical_matrix(overlap_matrix(1,:) == 0) = [];
+%                     
+%                     index_logical_center = index_logical_center - shift_center;
+%                     index_logical_matrix = index_logical_matrix - shift_matrix; % non dovrebbe essere con il +?
+%                     corrispondency = [index_logical_center;index_logical_matrix]    
+%                 case 'rightprimary'
+%                     [logical_matrix,shift_matrix] = allignleft(logical_matrix);
+%                     [logical_center,shift_center] = allignright(logical_center);
+%                     logical_center = fliplr(logical_center);                    
+%                     index_logical_matrix = 1:size(logical_matrix,2);
+%                     index_logical_center = fliplr(1:size(logical_center,2));                  
+%                     overlap_matrix = logical_matrix & logical_center;
+%                     
+%                     index_logical_center(overlap_matrix(1,:) == 0) = [];
+%                     index_logical_matrix(overlap_matrix(1,:) == 0) = [];
+%                     
+%                     index_logical_center = index_logical_center + shift_center;
+%                     index_logical_matrix = index_logical_matrix - shift_matrix;
+%                     corrispondency = [index_logical_center;index_logical_matrix]
+%             end
+%         end 
+%         pause
+%     end
+%     for i=1:size(idx_bgblack,2)
+%         if(idx_bgblack(i) ~= idx_center_bgblack)
+%             label_copy = label(:,idx_bgblack(i)); % Colore Foreground, Colore Background, Posizione, Tipo
+%             order_copy = order(:,idx_bgblack(i)); % Indice nel vettore obj_chess, Indice Chess, Centroide
+%             logical_matrix = logical(obj_chess(l).chess(order_copy(2)).intersections_x);
+%             logical_center = logical(obj_chess(l).chess(order(2,idx_center_bgblack)).intersections_x);
+%             string = strcat(label_copy(3),label_copy(4));
+%             if iscell(string)
+%                 string = string{1};
+%             end
+%             string = lower(string) 
+%             obj_chess(l).name 
+%             switch string
+%                 case 'leftsecondary'
+%                     [logical_matrix,shift_matrix] = allignright(logical_matrix);
+%                     index_logical_matrix = 1:size(logical_matrix,2);
+%                     [logical_center,shift_center] = allignright(logical_center);
+%                     index_logical_center = index_logical_matrix;
+%                     overlap_matrix = logical_matrix & logical_center;
+%                     
+%                     index_logical_center(overlap_matrix(1,:) == 0) = [];
+%                     index_logical_matrix(overlap_matrix(1,:) == 0) = [];
+%                     
+%                     index_logical_center = index_logical_center - shift_center;
+%                     index_logical_matrix = index_logical_matrix - shift_matrix; % non dovrebbe essere con il +?
+%                     corrispondency = [index_logical_center;index_logical_matrix]
+%                 case 'leftprimary'
+%                     [logical_matrix,shift_matrix] = allignleft(logical_matrix);
+%                     [logical_center,shift_center] = allignright(logical_center);
+%                     logical_center = fliplr(logical_center);                    
+%                     index_logical_matrix = 1:size(logical_matrix,2);
+%                     index_logical_center = fliplr(1:size(logical_center,2));                  
+%                     overlap_matrix = logical_matrix & logical_center;
+%                     
+%                     index_logical_center(overlap_matrix(1,:) == 0) = [];
+%                     index_logical_matrix(overlap_matrix(1,:) == 0) = [];
+%                     
+%                     index_logical_center = index_logical_center + shift_center;
+%                     index_logical_matrix = index_logical_matrix - shift_matrix;
+%                     corrispondency = [index_logical_center;index_logical_matrix]
+%                 case 'rightsecondary'
+%                     [logical_matrix,shift_matrix] = allignleft(logical_matrix);
+%                     index_logical_matrix = 1:size(logical_matrix,2);
+%                     [logical_center,shift_center] = allignleft(logical_center);
+%                     index_logical_center = index_logical_matrix;
+%                     overlap_matrix = logical_matrix & logical_center;
+%                     
+%                     index_logical_center(overlap_matrix(1,:) == 0) = [];
+%                     index_logical_matrix(overlap_matrix(1,:) == 0) = [];
+%                     
+%                     index_logical_center = index_logical_center - shift_center;
+%                     index_logical_matrix = index_logical_matrix - shift_matrix; % non dovrebbe essere con il +?
+%                     corrispondency = [index_logical_center;index_logical_matrix]                    
+%                 case 'rightprimary'
+%                     [logical_matrix,shift_matrix] = allignleft(logical_matrix);
+%                     [logical_center,shift_center] = allignright(logical_center);
+%                     logical_center = fliplr(logical_center);                    
+%                     index_logical_matrix = 1:size(logical_matrix,2);
+%                     index_logical_center = fliplr(1:size(logical_center,2));                  
+%                     overlap_matrix = logical_matrix & logical_center;
+%                     
+%                     index_logical_center(overlap_matrix(1,:) == 0) = [];
+%                     index_logical_matrix(overlap_matrix(1,:) == 0) = [];
+%                     
+%                     index_logical_center = index_logical_center + shift_center;
+%                     index_logical_matrix = index_logical_matrix - shift_matrix;
+%                     corrispondency = [index_logical_center;index_logical_matrix]
+%             end
+%         end
+%         pause
+%     end
+% end
+% 
+% 
+% 
+% 
