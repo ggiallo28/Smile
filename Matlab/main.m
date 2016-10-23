@@ -9,7 +9,7 @@ widthHead = 10;             %cm % horizontal 2*radius
 %% Parameters
 angleRightMirror = 67.5;    %deg
 angleLeftMirror = 112.5;    %deg
-distanceCamera = 200;       %cm
+distanceCamera = 70;       %cm
 fovHCamera = 83;            %deg
 headPosx = 0.5*pivot2pivot; %cm % x0,y0 ellipse centre coordinates
 headPosy = 20;              %cm
@@ -186,6 +186,11 @@ xRange2Right = -200:0.1:200;
 yRange2Right = xRange2Right*mCoeff2Right + kCoeff2Right;
 plot(xRange2Right,yRange2Right,'k');
 
+num = abs(mCoeff2Left-mCoeff2Right);
+den = abs(1-mCoeff2Left*mCoeff2Right);
+cur_fov1 = rad2deg(atan(num/den))
+cur_fov2 = 180-cur_fov1*2
+
 % Rette pasanti per gli estremi dell'elemento centrale
 for j=1:floor(N)-1
     plot(XRange(j,:),YRange(j,:),'b')
@@ -206,7 +211,7 @@ xRange2Left_Central = -200:0.1:x1;
 yRange2Left_Central = xRange2Left_Central*mCoeff2Left_Central + kCoeff2Left_Central;
 plot(xRange2Left_Central,yRange2Left_Central,'k');
 
-%Retta passante per la camera e l'estremo destro dellìelemento centrale
+%Retta passante per la camera e l'estremo destro dell'elemento centrale
 y1 = right_max_y; x2 = cameraCenter(1);
 x1 = right_max_x; y2 = cameraCenter(2);
 mCoeff2Right_Central = (y1 - y2)/(x1 - x2);
