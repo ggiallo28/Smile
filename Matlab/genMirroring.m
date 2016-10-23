@@ -1,6 +1,6 @@
-function [v] = genMirroring( angleLeftMirror, angleRightMirror, angleHead, N)
-    h2m(1) = abs(angleLeftMirror-angleHead); % Angle 2 Left -1
-    h2m(2) = abs(angleRightMirror-angleHead); % Angle 2 Right 1
+function [v] = genMirroring( angleLeftMirror, angleRightMirror, anglePoint, N)
+    h2m(1) = abs(angleLeftMirror-anglePoint); % Angle 2 Left -1
+    h2m(2) = abs(angleRightMirror-anglePoint); % Angle 2 Right 1
     %% Compute Rotations, Definisco sfasamenti in angoli tra le teste
     % v(1,:) = angoli di rotazione
     % v(2,:) = punto da ruotare
@@ -32,10 +32,7 @@ function [v] = genMirroring( angleLeftMirror, angleRightMirror, angleHead, N)
        if mod(i,2) == 0 && i>0
            k = ~k;
        end
-    end
-    
-    
-    
+    end    
 end
 
 
