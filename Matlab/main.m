@@ -7,12 +7,12 @@ pivot2pivot = 28.5;         %cm Distanza tra i due perni
 lengthHead = 20;            %cm % vertical 2*radius
 widthHead = 10;             %cm % horizontal 2*radius
 %% Parameters
-angleRightMirror = 74.64;    %deg
-angleLeftMirror = 130.81;    %deg
+angleRightMirror = 67.5;    %deg
+angleLeftMirror = 112.5;    %deg
 distanceCamera = 200;       %cm
 fovHCamera = 83;            %deg
 headPosx = 0.5*pivot2pivot; %cm % x0,y0 ellipse centre coordinates
-headPosy = 36;              %cm
+headPosy = 20;              %cm
 %% Logic
 lengthPivotMirrors = lengthMirrors+mirror2Pivot; % Lunghezza dello specchio più offset dovuto al fatto che lo specchio non finisce dove è posto l'asse di rotazione (pivot).
 angleBetweenMirror = abs(angleRightMirror-angleLeftMirror); % Angolo tra gli specchi
@@ -81,6 +81,7 @@ end
 [el_x, el_y] = genHead(headPosx, -headPosy, widthHead, lengthHead);
 el_X = zeros(floor(N)-1,size(el_x,2));
 el_Y = zeros(floor(N)-1,size(el_y,2));
+distOR = sqrt((mirrorsCenter(1)-mean(el_x))^2 + (mirrorsCenter(2)-mean(el_y))^2);
 for i=1:size(el_x,2)
     anglePoint = rad2deg(atan2((el_y(i)-mirrorsCenter(2)),(el_x(i)-mirrorsCenter(1))));
     if anglePoint<0
@@ -90,6 +91,12 @@ for i=1:size(el_x,2)
     for j=1:floor(N)-1
        [el_X(j,i),el_Y(j,i)] = rotate(el_x(i),el_y(i),mirrorsCenter(1),mirrorsCenter(2),v(1,j),'z'); 
     end 
+end
+for j=1:floor(N)-1
+    new_center_x = mean(el_X(j,:));
+    new_center_y = mean(el_Y(j,:));
+    distROT = sqrt((mirrorsCenter(1)-mean(el_X(j,:)))^2 + (mirrorsCenter(2)-mean(el_Y(j,:)))^2);
+    assert(abs(distOR-distROT)<exp(-10));
 end
 
 %% Plot Inverti le Y. plot([x1 x2], [y1 y2])
@@ -126,6 +133,7 @@ yRange = xRange*mCoeff + kCoeff;
 
 XRange = zeros(floor(N)-1,size(xRange,2));
 YRange = zeros(floor(N)-1,size(yRange,2));
+distOR = sqrt((mirrorsCenter(1)-mean(xRange))^2 + (mirrorsCenter(2)-mean(yRange))^2);
 for i=1:size(xRange,2)
     anglePoint = rad2deg(atan2((yRange(i)-mirrorsCenter(2)),(xRange(i)-mirrorsCenter(1))));
     if anglePoint<0
@@ -139,10 +147,126 @@ end
 
 for j=1:floor(N)-1
     plot(XRange(j,:),YRange(j,:))
+    new_center_x = mean(XRange(j,:));
+    new_center_y = mean(YRange(j,:));
+    distROT = sqrt((mirrorsCenter(1)-mean(XRange(j,:)))^2 + (mirrorsCenter(2)-mean(YRange(j,:)))^2);
+    assert(abs(distOR-distROT)<exp(-10));
+end
+hold off;
+%% Plot delle teste potenzialmente visibili
+figure,hold on,axis([-distanceCamera distanceCamera -distanceCamera distanceCamera])
+plot([0 pivot2pivot], [0 0],'b');
+plot([0 inPointLeft(1)], [0 -inPointLeft(2)],'b');
+plot([pivot2pivot inPointRight(1)], [0 -inPointRight(2)],'b');
+plot([inPointRight(1) exPointRight(1)], [-inPointRight(2) -exPointRight(2)],'b');
+plot([inPointLeft(1) inPointRight(1)], [-inPointLeft(2) -inPointRight(2)],'b');
+plot([inPointLeft(1) exPointLeft(1)], [-inPointLeft(2) -exPointLeft(2)],'b');
+
+scatter(mirrorsCenter(1),mirrorsCenter(2));
+scatter(cameraCenter(1),cameraCenter(2));
+plot(el_x,el_y,'b')
+plot([min(el_x) cameraCenter(1)], [median(el_y) cameraCenter(2)],'b');
+plot([max(el_x) cameraCenter(1)], [median(el_y) cameraCenter(2)],'b');
+
+% Retta passante per il centro della camera e l'estremo esterno dello specchio sinistro
+y1 = -exPointLeft(2); x2 = cameraCenter(1);
+x1 = exPointLeft(1); y2 = cameraCenter(2);
+mCoeff2Left = (y1 - y2)/(x1 - x2);
+kCoeff2Left = (x1*y2 - x2*y1)/(x1 - x2);
+xRange2Left = -200:0.1:200;
+yRange2Left = xRange2Left*mCoeff2Left + kCoeff2Left;
+plot(xRange2Left,yRange2Left,'k');
+
+% Retta passante per il centro della camera e l'estremo esterno dello specchio destro
+y1 = -exPointRight(2); x2 = cameraCenter(1);
+x1 = exPointRight(1); y2 = cameraCenter(2);
+mCoeff2Right = (y1 - y2)/(x1 - x2);
+kCoeff2Right = (x1*y2 - x2*y1)/(x1 - x2);
+xRange2Right = -200:0.1:200;
+yRange2Right = xRange2Right*mCoeff2Right + kCoeff2Right;
+plot(xRange2Right,yRange2Right,'k');
+
+% Rette pasanti per gli estremi dell'elemento centrale
+for j=1:floor(N)-1
+    plot(XRange(j,:),YRange(j,:),'b')
+end
+
+% Calcolo degli estremi dell'elemento centrale
+left_min_x = min(min(XRange));
+left_min_y = min(YRange(XRange == left_min_x));
+right_max_x = max(max(XRange));
+right_max_y = min(YRange(find(XRange == right_max_x, 1 )));
+
+% Retta passante per la camera e l'estremo sinistro dell'elemento centrale
+y1 = left_min_y; x2 = cameraCenter(1);
+x1 = left_min_x; y2 = cameraCenter(2);
+mCoeff2Left_Central = (y1 - y2)/(x1 - x2);
+kCoeff2Left_Central = (x1*y2 - x2*y1)/(x1 - x2);
+xRange2Left_Central = -200:0.1:x1;
+yRange2Left_Central = xRange2Left_Central*mCoeff2Left_Central + kCoeff2Left_Central;
+plot(xRange2Left_Central,yRange2Left_Central,'k');
+
+%Retta passante per la camera e l'estremo destro dellìelemento centrale
+y1 = right_max_y; x2 = cameraCenter(1);
+x1 = right_max_x; y2 = cameraCenter(2);
+mCoeff2Right_Central = (y1 - y2)/(x1 - x2);
+kCoeff2Right_Central = (x1*y2 - x2*y1)/(x1 - x2);
+xRange2Right_Central = x1:0.1:200;
+yRange2Right_Central = xRange2Right_Central.*mCoeff2Right_Central + kCoeff2Right_Central;
+plot(xRange2Right_Central,yRange2Right_Central,'k');
+
+% Retta passante per lo specchio sinistro
+x1 = inPointLeft(1); x2 = exPointLeft(1);
+y1 = -inPointLeft(2); y2 = -exPointLeft(2);
+mCoeffLeft_Mirror = (y1 - y2)/(x1 - x2);
+kCoeffLeft_Mirror = (x1*y2 - x2*y1)/(x1 - x2);
+
+% Retta passante per lo specchio destro
+y1 = -inPointRight(2); x2 = exPointRight(1);
+x1 = inPointRight(1); y2 = -exPointRight(2);
+mCoeffRight_Mirror = (y1 - y2)/(x1 - x2);
+kCoeffRight_Mirror = (x1*y2 - x2*y1)/(x1 - x2);
+
+vis_el_X = [];
+vis_el_Y = [];
+for i=1:floor(N)-1;
+    for j=1:size(el_X,2)
+        if (... % Il punto per essere potenzialmente visibile deve trovarsi tra le linee nere oppure al di sotto dell'elemento centrale ma "dietro" gli specchi
+            ( isOver(mCoeff2Left, kCoeff2Left, el_X(i,j), el_Y(i,j))&&isBelow(mCoeff2Left_Central, kCoeff2Left_Central, el_X(i,j), el_Y(i,j))||...
+              isOver(mCoeff2Right, kCoeff2Right, el_X(i,j), el_Y(i,j))&&isBelow(mCoeff2Right_Central, kCoeff2Right_Central, el_X(i,j), el_Y(i,j)))||...
+              isOver(mCoeffRight_Mirror, kCoeffRight_Mirror, el_X(i,j), el_Y(i,j))&&isOver(mCoeff2Right, kCoeff2Right, el_X(i,j), el_Y(i,j))&&el_Y(i,j)<right_max_y||...
+              isOver(mCoeffLeft_Mirror, kCoeffLeft_Mirror, el_X(i,j), el_Y(i,j))&&isOver(mCoeff2Left, kCoeff2Left, el_X(i,j), el_Y(i,j))&& el_Y(i,j)<left_min_y)          
+        
+            vis_el_X(i,j) = el_X(i,j);
+            vis_el_Y(i,j) = el_Y(i,j);
+        end
+    end
+end
+
+for i=1:size(vis_el_Y,1);
+    tmp_x = vis_el_X(i,:);
+    tmp_x(tmp_x==0) = [];
+    tmp_y = vis_el_Y(i,:);
+    tmp_y(tmp_y==0) = [];
+    plot(tmp_x,tmp_y);
+end
+
+%% Plot delle proiezioni realmente visibili
+for i=1:size(v,2);
+    [p1, p2] = getTangentLine(el_X(i,:),el_Y(i,:), cameraCenter);
+    XX = [p1(1), p2(1)];
+    YY = [p1(2), p2(2)];
+    for k=1:2
+        if (...  
+        ( isOver(mCoeff2Left, kCoeff2Left, XX(k), YY(k))&&isBelow(mCoeff2Left_Central, kCoeff2Left_Central, XX(k), YY(k))||...
+          isOver(mCoeff2Right, kCoeff2Right, XX(k), YY(k))&&isBelow(mCoeff2Right_Central, kCoeff2Right_Central, XX(k), YY(k)))||...
+          isOver(mCoeffRight_Mirror, kCoeffRight_Mirror, XX(k), YY(k))&&isOver(mCoeff2Right, kCoeff2Right, XX(k), YY(k))&&YY(k)<right_max_y||...
+          isOver(mCoeffLeft_Mirror, kCoeffLeft_Mirror, XX(k), YY(k))&&isOver(mCoeff2Left, kCoeff2Left, XX(k), YY(k))&& YY(k)<left_min_y)          
+            if(~isBehind(el_X, el_Y, XX(k), YY(k), cameraCenter(1), cameraCenter(2), i))
+                plot([XX(k) cameraCenter(1)], [YY(k) cameraCenter(2)]);
+            end
+        end
+    end
 end
 %% TODO calcolare indice di copertura
-
-
-
-
 
