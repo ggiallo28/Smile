@@ -16,26 +16,42 @@ switch band
         RGB = im2double(RGB);
         cform = makecform('srgb2lab', 'AdaptedWhitePoint', whitepoint('D65'));
         I = applycform(RGB,cform);
+%         % Define thresholds for channel 1 based on histogram settings
+%         channel1Min = 10.876;
+%         channel1Max = 75.798;
+%         % Define thresholds for channel 2 based on histogram settings
+%         channel2Min = 6.705;
+%         channel2Max = 76.596;
+%         % Define thresholds for channel 3 based on histogram settings
+%         channel3Min = 3.081;
+%         channel3Max = 70.703;
+%         BW = (I(:,:,1) >= channel1Min ) & (I(:,:,1) <= channel1Max) & ...
+%              (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
+%              (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
         % Define thresholds for channel 1 based on histogram settings
-        channel1Min = 10.876;
-        channel1Max = 64.798;
+        channel1Min = 10.171;
+        channel1Max = 75.909;
+
         % Define thresholds for channel 2 based on histogram settings
-        channel2Min = 6.705;
-        channel2Max = 45.596;
+        channel2Min = 6.703;
+        channel2Max = 77.961;
+
         % Define thresholds for channel 3 based on histogram settings
-        channel3Min = -6.081;
-        channel3Max = 27.703;
+        channel3Min = -20.494;
+        channel3Max = 70.297;
+
+        % Create mask based on chosen histogram thresholds
         BW = (I(:,:,1) >= channel1Min ) & (I(:,:,1) <= channel1Max) & ...
-             (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
-             (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
+            (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
+            (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
         % Initialize output masked image based on input image.
-        BW2 =  imdilate(BW,strel('square',20));
+        BW = bwareaopen(BW, 300); % Parametro
+        BW2 =  imdilate(BW,strel('square',10));
         BW2 = bwareaopen(BW2, 2000); % Parametro
         BW = BW & BW2;
-        BW = bwareaopen(BW, 500); % Parametro
-        BW = imdilate(BW,strel('square',10));
-        BW = bwareaopen(BW, 2000); % Parametro
-        BW = imerode(BW,strel('square',10));
+        BW = imerode(BW,strel('square',5));
+        BW = imdilate(BW,strel('square',5));
+        BW = bwareaopen(BW, 300); % Parametro
         CC = bwconncomp(BW);
         for i=1:size(CC.PixelIdxList,2)
             BW_TMP = false(size(BW));
@@ -79,13 +95,13 @@ switch band
              (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
              (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
         % Initialize output masked image based on input image.
-        BW2 =  imdilate(BW,strel('square',20));
+        BW = bwareaopen(BW, 300); % Parametro
+        BW2 =  imdilate(BW,strel('square',10));
         BW2 = bwareaopen(BW2, 2000); % Parametro
         BW = BW & BW2;
-        BW = bwareaopen(BW, 500); % Parametro
-        BW = imdilate(BW,strel('square',10));
-        BW = bwareaopen(BW, 2000); % Parametro
-        BW = imerode(BW,strel('square',10));
+        BW = imerode(BW,strel('square',5));
+        BW = imdilate(BW,strel('square',5));
+        BW = bwareaopen(BW, 300); % Parametro
         CC = bwconncomp(BW);
         for i=1:size(CC.PixelIdxList,2)
             BW_TMP = false(size(BW));
@@ -116,27 +132,28 @@ switch band
         cform = makecform('srgb2lab', 'AdaptedWhitePoint', whitepoint('D65'));
         I = applycform(RGB,cform);
         % Define thresholds for channel 1 based on histogram settings
-        channel1Min = 11.733;
-        channel1Max = 58.346;
+        channel1Min = 12.186;
+        channel1Max = 83.040;
+
         % Define thresholds for channel 2 based on histogram settings
-        channel2Min = -9.896;
-        channel2Max = 5.252;
+        channel2Min = -28.254;
+        channel2Max = 23.068;
+
         % Define thresholds for channel 3 based on histogram settings
-        channel3Min = -31.904;
-        channel3Max = -10.479;
+        channel3Min = -54.402;
+        channel3Max = -7.623;
         % Create mask based on chosen histogram thresholds
         BW = (I(:,:,1) >= channel1Min ) & (I(:,:,1) <= channel1Max) & ...
             (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
             (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
         % Initialize output masked image based on input image.
-        BW2 =  imdilate(BW,strel('square',20));
+        BW = bwareaopen(BW, 300); % Parametro
+        BW2 =  imdilate(BW,strel('square',10));
         BW2 = bwareaopen(BW2, 2000); % Parametro
         BW = BW & BW2;
-        BW = bwareaopen(BW, 500); % Parametro
-        BW = imdilate(BW,strel('square',10));
-        BW = bwareaopen(BW, 2000); % Parametro
-        BW = imerode(BW,strel('square',10));
-        BW = imopen(BW,strel('square',10));
+        BW = imerode(BW,strel('square',5));
+        BW = imdilate(BW,strel('square',5));
+        BW = bwareaopen(BW, 300); % Parametro
         CC = bwconncomp(BW);
         for i=1:size(CC.PixelIdxList,2)
             BW_TMP = false(size(BW));
@@ -167,11 +184,11 @@ switch band
         I = rgb2hsv(RGB);
         % Define thresholds for channel 1 based on histogram settings
         channel1Min = 0.129;
-        channel1Max = 0.183;
+        channel1Max = 0.191;
 
         % Define thresholds for channel 2 based on histogram settings
         channel2Min = 0.350;
-        channel2Max = 0.844;
+        channel2Max = 0.910;
 
         % Define thresholds for channel 3 based on histogram settings
         channel3Min = 0.498;
@@ -181,13 +198,13 @@ switch band
             (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
             (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
         % Initialize output masked image based on input image.
-        BW2 =  imdilate(BW,strel('square',20));
+        BW = bwareaopen(BW, 300); % Parametro
+        BW2 =  imdilate(BW,strel('square',10));
         BW2 = bwareaopen(BW2, 2000); % Parametro
         BW = BW & BW2;
-        BW = bwareaopen(BW, 500); % Parametro
-        BW = imdilate(BW,strel('square',10));
-        BW = bwareaopen(BW, 2000); % Parametro
-        BW = imerode(BW,strel('square',10));
+        BW = imerode(BW,strel('square',5));
+        BW = imdilate(BW,strel('square',5));
+        BW = bwareaopen(BW, 300); % Parametro
         CC = bwconncomp(BW);
         for i=1:size(CC.PixelIdxList,2)
             BW_TMP = false(size(BW));
@@ -217,7 +234,6 @@ switch band
         warning('Unexpected band type. No elements created.')
 end
 obj = objBlobs(band);
-obj.color_mask = BW;
 
 %% Separazione delle chessboard
 split = sum(BW);
@@ -240,28 +256,48 @@ for i = 1:size(x,1)
     idx = find(bw_cut~=0);
     y = [y; min(idx),max(idx)];
 end
-obj.bbox_x = x;
-obj.bbox_y = y;
 
 %% Calcolo della chessboard complementare & background
 inv_BW = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
 blackwhite_BW = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
 colors = [{''}];
+ii = [];
 for i = 1:size(x,1)
     mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
     mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
     color_square =  BW&mask;
     CC = bwconncomp(color_square);
-    if(size(CC.PixelIdxList,2) == 2)
-        mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
-        en = abs(y(i,2)-y(i,1))/3;
-        y(i,1) = round(y(i,1)-en);
-        y(i,2) = round(y(i,2)+en);
-        mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
-        color_square =  BW&mask;
-        side = mean(x(i,1),x(i,2))<size(maskedRGBImage,2)*0.5;
-        color_square(y(i,1):y(i,1)+3,x(i,1)+10*(~side):x(i,2)-10*side) = 255;
-        color_square(y(i,2)-3:y(i,2),x(i,1)+10*side:x(i,2)-10*(~side)) = 255;
+    if(size(CC.PixelIdxList,2) == 1)
+        BW_TMP = false(size(blackwhite_BW));
+        BW_TMP(CC.PixelIdxList{1}) = 1;
+        bbs = cell2mat(struct2cell(regionprops(BW_TMP,'BoundingBox')));
+        if(bbs(3)*bbs(4) < 2000)
+            uno = maskedRGBImage(:,:,1);
+            due = maskedRGBImage(:,:,2);
+            tre = maskedRGBImage(:,:,3);
+            BW(CC.PixelIdxList{1}) = 0;
+            uno(CC.PixelIdxList{1}) = 0;
+            due(CC.PixelIdxList{1}) = 0;
+            tre(CC.PixelIdxList{1}) = 0;        
+            maskedRGBImage = cat(3,uno,due,tre);
+            ii = [ii, i];
+            colors(i) = {''};
+            continue;
+        end
+    end
+    if(size(CC.PixelIdxList,2) == 2) % Risolvere il problema quando abbiamo solo due componenti connesse all'interno di una sezione. Cioè quando abbiamo solo i due quadrati intermedi, per calcolare la maschera complementare dobbiamo simulare quello di sotpra e quello di sottoaltrimenti la regione sarebbe ritagliata troppo piccola.
+        stats = cell2mat(struct2cell(regionprops(color_square,'BoundingBox'))); % Devo essere sicuro siano due blob isolati
+        if((stats(4) + stats(8))< 0.5*size(maskedRGBImage,1))
+            mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
+            en = abs(y(i,2)-y(i,1))/3;
+            y(i,1) = round(y(i,1)-en);
+            y(i,2) = round(y(i,2)+en);
+            mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
+            color_square =  BW&mask;
+            side = mean(x(i,1),x(i,2))<size(maskedRGBImage,2)*0.5;
+            color_square(y(i,1):y(i,1)+3,x(i,1)+10*(~side):x(i,2)-10*side) = 255;
+            color_square(y(i,2)-3:y(i,2),x(i,1)+10*side:x(i,2)-10*(~side)) = 255;
+        end
     end
     idx = find(color_square == 1);
     [idx,idy]=ind2sub(size(color_square),idx);
@@ -272,8 +308,8 @@ for i = 1:size(x,1)
     image = rgb2gray(RGB);
     square = image.*uint8(mask);
     square =  square(y(i,1):y(i,2),x(i,1):x(i,2));
-    square_bw = im2bw(square,0.5); % Parametro
-    square_bw = bwareaopen(square_bw, 500); % Parametro
+    square_bw = im2bw(square,0.6); % Parametro
+    square_bw = bwareaopen(square_bw, 400); % Parametro
     blackwhite_BW(y(i,1):y(i,2),x(i,1):x(i,2)) = blackwhite_BW(y(i,1):y(i,2),x(i,1):x(i,2)) + square_bw;
     if(sum(sum(bwconvhull(square_bw)))>0.2*size(square_bw,1)*size(square_bw,2))
         colors(i) = {'White'};
@@ -281,7 +317,14 @@ for i = 1:size(x,1)
         colors(i) = {'Black'};
     end
     inv_BW = inv_BW + mask;
+    i
 end
+y(ii,:) = [];
+x(ii,:) = [];
+colors(:,ii) = [];
+obj.bbox_x = x;
+obj.bbox_y = y;
+obj.color_mask = BW;
 
 %% Fix dei triangoli del background
 CC = bwconncomp(blackwhite_BW);
@@ -329,7 +372,7 @@ for i = 1:size(x,1)
             s = regionprops(BW_TMP,'BoundingBox');
             img = imcrop(BW_TMP,s.BoundingBox);
             toCompare = bwconvhull(img);
-            bboxCorr(iter) = corr2(toCompare,img);
+            bboxCorr(iter) = corr2(toCompare,imfill(img,'holes'));
         end
         if(find(bboxCorr<0.72))
             idx = find(bboxCorr<0.72);
@@ -365,11 +408,11 @@ for i = 1:size(CC.PixelIdxList,2)
     toFlip = isTriangle(img);
     white = sum(sum(img));
     black = size(img,1)*size(img,2);    
-    figure, subplot(211); imshow(img);
+%    figure, subplot(211); imshow(img);
     if(white<0.6*black && black>500 && black<10000 && toFlip)
         img_fill = img |rot90(img,2);
         img_fill = imfill(img_fill,'holes');
-        subplot(212); imshow(img_fill);
+%        subplot(212); imshow(img_fill);
         img_fill = img_fill(4:end-3,4:end-3);
         bwD((s.BoundingBox(2)+3):(s.BoundingBox(2)+s.BoundingBox(4)-3),(s.BoundingBox(1)+3):(s.BoundingBox(1)+s.BoundingBox(3)-3)) = img_fill; 
     end
@@ -405,10 +448,21 @@ for i = 1:size(x,1)
     axis = 1:5; axis(id_row) = [];
     for k=1:size(X,2)
         value = X(:,k); value(X(:,k)==0) = [];
+        if(size(value,2) <=1)
+            continue
+        end
         X(:,k) = pchip(axis,value,1:5);
         value = Y(:,k); value(Y(:,k)==0) = [];
+        if(size(value,2) <=1)
+            continue
+        end
         Y(:,k) = pchip(axis,value,1:5); 
     end
+    if(size(find(X==0),1)>0 || size(find(Y==0),1)>0)
+        continue
+    end
+    % trovo la posizione giusta degli zeri in funzione di quelle che sono
+    % le tessere mancanti
     for k=1:size(id_row,1)
         row_Xchess = obj.chess(i).center_x(id_row(k),:);
         row_Ychess = obj.chess(i).center_y(id_row(k),:);
@@ -443,8 +497,21 @@ for i = 1:size(x,1)
         yv = 1:size(Y,2);    
         X_pchip = X; X_pchip(X==0)=[];
         Y_pchip = Y; Y_pchip(Y==0)=[];
+        if(size(X_pchip,1) == 1) % Se abbiamo solo un punto switcha sulle righe/colle
+            X = obj.chess(i).center_x(id_row,:);
+            xv = 1:size(X,1);   
+            X_pchip = X; X_pchip(X==0)=[];
+        end
+        if(size(Y_pchip,2) == 1)
+            Y = obj.chess(i).center_y(:,id_col);
+            yv = 1:size(Y,1);    
+            Y_pchip = Y; Y_pchip(Y==0)=[];
+        end
         xv_pchip = xv; xv_pchip(X==0)=[];
         yv_pchip = yv; yv_pchip(Y==0)=[];
+        if(size(yv_pchip,2) == 1 || size(xv_pchip,2) == 1) % Se quanto fatto prima non risolve cancella la colonna
+            continue;
+        end
         val_x =  pchip(xv_pchip,X_pchip',xv);
         o = obj.chess(i).center_x;
         obj.chess(i).center_x(id_row,id_col) = val_x(id_row);

@@ -17,7 +17,7 @@ close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
 checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
-orig = imread(['_DSC007',num2str(2),'.JPG']);
+orig = imread(['foto/DSC0012',num2str(3),'.JPG']);
 figure, O = imcrop(orig);
 % [edge_magnitude, edge_orientation] = coloredges(I);
 % img1=rgb2ycbcr(I);
@@ -47,9 +47,9 @@ Yellow = im2double(cymk(:,:,3));
 Key = im2double(cymk(:,:,4));
 lumMat = (0.2126 * R) + (0.7152 * G) + (0.0722 * B); % 
 K = zeros(size(O));
-K(:,:,1) = R./(1-lumMat);
-K(:,:,2) = G./(1-lumMat);
-K(:,:,3) = B./(1-lumMat);
+K(:,:,1) = R.*(2-lumMat);
+K(:,:,2) = G.*(2-lumMat);
+K(:,:,3) = B.*(2-lumMat);
 % K(:,:,1) = R./(R+G+B);
 % K(:,:,2) = G./(R+G+B);
 % K(:,:,3) = B./(R+G+B);
@@ -65,8 +65,10 @@ obj_chess = [obj_red;obj_green;obj_blue;obj_yellow];
 %% Plot Results
 inv_BW = uint8(obj_red.black_white|obj_green.black_white|obj_blue.black_white|obj_yellow.black_white);
 col_BW = uint8(obj_red.color_mask|obj_green.color_mask|obj_blue.color_mask|obj_yellow.color_mask);
+dual_BW = uint8(obj_red.inv_color_mask|obj_green.inv_color_mask|obj_blue.inv_color_mask|obj_yellow.inv_color_mask);
 BW = 255*(inv_BW-col_BW);
-fuse = obj_red.masked_rgb+obj_green.masked_rgb+obj_blue.masked_rgb+obj_yellow.masked_rgb+repmat(BW,[1 1 3]);
+colors_fuse = obj_red.masked_rgb+obj_green.masked_rgb+obj_blue.masked_rgb+obj_yellow.masked_rgb;
+fuse = colors_fuse+repmat(BW,[1 1 3]);
 imshow(fuse); hold on;
 for l=1:size(obj_chess,1)
     obj = obj_chess(l);
@@ -79,12 +81,14 @@ for l=1:size(obj_chess,1)
     end
 end
 hold off;
+% TODO ANLCUNI PUNTI VENGONO MESSI MALE
 %% Separa i riflessi
 enlarged = imdilate(fuse,strel('disk',20));
-CC = bwconncomp(enlarged);
-maskCenter = false(size(fuse)); maskCenter(CC.PixelIdxList{2}) = 1;  maskCenter = maskCenter(:,:,1) | maskCenter(:,:,2)| maskCenter(:,:,3);
-maskLeft = false(size(fuse)); maskLeft(CC.PixelIdxList{1}) = 1;  maskLeft = maskLeft(:,:,1) | maskLeft(:,:,2) | maskLeft(:,:,3);
-maskRight = false(size(fuse)); maskRight(CC.PixelIdxList{3}) = 1;  maskRight = maskRight(:,:,1) | maskRight(:,:,2) | maskRight(:,:,3);
+CC = bwconncomp(rgb2gray(enlarged)~=0);
+assert(CC.NumObjects == 3, 'Ci sono troppi riflessi');
+maskCenter = false(size(rgb2gray(enlarged))); maskCenter(CC.PixelIdxList{2}) = 1;
+maskLeft = false(size(rgb2gray(enlarged))); maskLeft(CC.PixelIdxList{1}) = 1;
+maskRight = false(size(rgb2gray(enlarged))); maskRight(CC.PixelIdxList{3}) = 1;
 positions = [{'Left'} {'Center'} {'Right'}];
 types = [{'Primary'} {'Secondary'} {'Real'}];
 order = []; k =1;
@@ -152,21 +156,28 @@ for l=1:size(obj_chess,1)
         end
         arr = [arr,obj_chess(l).chess(i).position];
     end
-    if(left == 2 && right == 1)
+    %% TODO Sistemare sta cosa non va bene fare assunzioni sul numero di riflessi che vedi
+    if(left >= 2 && right == 1)
        idx = find(strcmp(arr,positions(1)));
        obj_chess(l).chess(idx(1)).type = types(2);
        obj_chess(l).chess(idx(2)).type = types(1);
        idx = find(strcmp(arr,positions(3)));
        obj_chess(l).chess(idx(1)).type = types(1);
     end
-    if(right == 2 && left == 1)
+    if(right >= 2 && left == 1)
        idx = find(strcmp(arr,positions(3)));
        obj_chess(l).chess(idx(1)).type = types(1);
        obj_chess(l).chess(idx(2)).type = types(2);  
        idx = find(strcmp(arr,positions(1)));
        obj_chess(l).chess(idx(1)).type = types(1);
     end
-    if(left == 1 && right == 1)
+    empty_type = false;
+    for i = 1:size(obj_chess(l).chess,2)
+        if(isempty(obj_chess(l).chess(i).type))
+            empty_type = true;
+        end
+    end
+    if(empty_type)
         for i = 1:size(obj_chess(l).chess,2)
             if(~strcmp(obj_chess(l).chess(i).position,positions(2)))
                 curr_color = name2code(obj_chess(l).name);
@@ -221,7 +232,7 @@ end
 
 imshow(maskCenter|maskLeft|maskRight)
 figure, imshow(enlarged);
-%% Sposta punti
+%% Seprazione Riflessi
 maskC  = false(size(fuse,1),size(fuse,2));
 maskL1 = false(size(fuse,1),size(fuse,2));
 maskL2 = false(size(fuse,1),size(fuse,2));
@@ -264,21 +275,80 @@ for k=1:5
     idx = find(mask == 1);
     [idx,idy]=ind2sub(size(mask),idx);
     j = boundary(idx,idy,0.2); % Parametro
-    mask = poly2mask(idy(j),idx(j), size(mask,1), size(mask,2)); 
-    ImgMat = im2double(I); ImgMat = (ImgMat(:,:,1)+ImgMat(:,:,2)+ImgMat(:,:,3))./3; ImgMat = ImgMat.*mask;
-    filtered = medfilt2(ImgMat,[10,10]); 
-    yfilter = fspecial('sobel').*3;
-	xfilter = yfilter';
-    Jx = imfilter(filtered,xfilter);
-    Jy = imfilter(filtered,yfilter);
-    J = sqrt(Jx.*Jx + Jy.*Jy);
-    bw = hysthresh(J, 0.1, 0.8);
-    figure, imshow(imclose(J,strel('square',5)));
+    maskI = poly2mask(idy(j),idx(j), size(mask,1), size(mask,2));
+    switch(k)
+        case 1
+            maskCI = maskI;
+        case 2
+            maskL1I = maskI;
+        case 3
+            maskL2I = maskI;
+        case 4
+            maskR1I = maskI;
+        case 5
+            maskR2I = maskI;
+    end   
+end
+%% Calcolo Convexhull maschere
+for i=1:size(obj_chess,1)
+    for j=1:size(obj_chess(i).chess,2) %Inew = I.*repmat(M,[1,1,3]);
+        cut_x = obj_chess(i).bbox_x(j,:);
+        cut_y = obj_chess(i).bbox_y(j,:); 
+        if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
+            mask = maskL2I;
+        end
+        if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Primary'))
+            mask = maskR1I;
+        end
+        if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Primary'))
+            mask = maskL1I;
+        end
+        if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
+            mask = maskR2I;
+        end
+        if(strcmp(obj_chess(i).chess(j).position,'Center'))
+            mask = maskCI;
+        end
+        obj_chess(i).chess(j).ch_mask = false(size(fuse,1),size(fuse,2));      
+        obj_chess(i).chess(j).ch_mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)) = mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2));
+    end
 end
 
-    edge_magnitude = edge_magnitude + edge(mask);
-    edge_magnitude = bwareaopen(edge_magnitude>0.9,10);
-    figure, [rj, cj, re, ce] = findendsjunctions(edge_magnitude, 1);
+% for k=1:5
+%     switch(k)
+%         case 1
+%             mask = maskC;
+%         case 2
+%             mask = maskL1;
+%         case 3
+%             mask = maskL2;
+%         case 4
+%             mask = maskR1;
+%         case 5
+%             mask = maskR2;
+%     end
+%     idx = find(mask == 1);
+%     [idx,idy]=ind2sub(size(mask),idx);
+%     j = boundary(idx,idy,0.2); % Parametro
+%     mask = poly2mask(idy(j),idx(j), size(mask,1), size(mask,2)); 
+%     ImgMat = im2double(I); ImgMat = (ImgMat(:,:,1)+ImgMat(:,:,2)+ImgMat(:,:,3))./5; ImgMat = ImgMat.*mask;
+%     filtered = Kuwahara(ImgMat,4*4+1);
+%     T = adaptthresh(filtered,0.5,'ForegroundPolarity','bright');
+%     filtered = imbinarize(filtered,T);
+%     filtered = im2bw(filtered,0.1);
+%     yfilter = fspecial('sobel');
+% 	xfilter = yfilter';
+%     xyfilter = [-1 -1 0; -1 0 1; 0 1 1];
+%     yxfilter = [0 1 1; -1 0 1; -1 -1 0];
+%     Jx = imfilter(filtered,xfilter);
+%     Jy = imfilter(filtered,yfilter); 
+%     J = sqrt(Jx.*Jx + Jy.*Jy);
+%     IM = cat(3,Jx,Jy,Jyx+Jxy);
+%     J = medfilt2(J,[5,5]); 
+%     figure, imshow(J);
+% end
+
+
 
 for k=1:5
     switch(k)
@@ -296,7 +366,79 @@ for k=1:5
     idx = find(mask == 1);
     [idx,idy]=ind2sub(size(mask),idx);
     j = boundary(idx,idy,0.2); % Parametro
-    mask = poly2mask(idy(j),idx(j), size(mask,1), size(mask,2)); 
+    mask = poly2mask(idy(j),idx(j), size(mask,1), size(mask,2));
+    white = imopen(logical(BW),strel('square',5));
+    black = imopen(dual_BW & ~col_BW & ~inv_BW,strel('square',5));
+    black2 = imdilate(black,strel('square',15));
+    black2 = bwareaopen(black2, 4000); % Parametro
+    black = black & black2;
+    masked = im2double(I);
+    masked(repmat(black,1,1,3)) = 0;
+    masked(repmat(logical(col_BW),1,1,3)) = 0;  
+    masked(repmat(white,1,1,3)) = 255;
+    masked = (masked + im2double(colors_fuse)).*repmat(mask,1,1,3);
+%+ imerode(im2double(fuse),strel('square',10));
+%     masked(:,:,1) = medfilt2(medfilt2(masked(:,:,1).*mask,[1, 10]),[10 1]);
+%     masked(:,:,2) = medfilt2(medfilt2(masked(:,:,2).*mask,[1, 10]),[10 1]);
+%     masked(:,:,3) = medfilt2(medfilt2(masked(:,:,3).*mask,[1, 10]),[10 1]);
+%     C = corner(imadjust(rgb2gray(masked)));
+%     imshow(masked);
+%     hold on
+%     plot(C(:,1), C(:,2), 'r*');   
+%     filtered1 = Kuwahara(masked(:,:,1),4*3+1);
+% %    filtered1 = filtered1.*imopen(bwareaopen(filtered1>0.2,1000),strel('square',5));
+%     filtered2 = Kuwahara(masked(:,:,2),4*3+1);
+% %    filtered2 = filtered2.*imopen(bwareaopen(filtered2>0.2,1000),strel('square',5));
+%     filtered3 = Kuwahara(masked(:,:,3),4*3+1);
+% %    filtered3 = filtered3.*imopen(bwareaopen(filtered3>0.2,1000),strel('square',5));
+%     filtered = im2double(cat(3,filtered1,filtered2,filtered3));
+    filtered = masked;
+    
+    for i=1:size(filtered,1)
+        for j=1:size(filtered,2)
+            c = filtered(i,j,:);        
+            if(sum(c) == 0 || sum(c) == 3)
+                continue;
+            end
+%             isWhiteORblack = (abs(c(:,:,1)-c(:,:,2)) + abs(c(:,:,1)-c(:,:,3)) + abs(c(:,:,2)-c(:,:,3))) < 0.4;
+%             if(isWhiteORblack)
+%                 white = reshape([1 1 1],1,1,3); 
+%                 black = reshape([0 0 0],1,1,3); 
+%                 colors = [white, black];
+%             else
+                colors = getColors(i,j,obj_chess,10,c);
+%             end           
+            v = zeros(1,size(colors,2));
+            for l=1:size(v,2)
+                dist = colors(:,l,:)-c;
+                dist = [dist(1,1,2) dist(1,1,1) dist(1,1,3)];
+                v(l) = norm(dist);
+            end
+            idx = find(v==min(v));
+            c = colors(:,max(idx),:);
+            if(max(c)>0)
+                c = c./max(c);
+            end
+            filtered(i,j,:) = c;
+        end
+    end
+    
+    filtered(:,:,1) = imclose(bwareaopen(filtered(:,:,1),300),strel('square',10));
+    filtered(:,:,2) = imclose(bwareaopen(filtered(:,:,2),300),strel('square',10));
+    filtered(:,:,3) = imclose(bwareaopen(filtered(:,:,3),300),strel('square',10));
+    filtered(:,:,1) = imopen(bwareaopen(filtered(:,:,1),300),strel('square',10));
+    filtered(:,:,2) = imopen(bwareaopen(filtered(:,:,2),300),strel('square',10));
+    filtered(:,:,3) = imopen(bwareaopen(filtered(:,:,3),300),strel('square',10));
+    [edge_magnitude, edge_orientation, Jx, Jy, Jxy] = coloredges(filtered);
+    edge_magnitude = bwareaopen(edge_magnitude>0.4,20);
+    edge_magnitude = filledgegaps(edge_magnitude,10)+edge(mask); % Capire se lasciare
+    [rj, cj, re, ce] = findendsjunctions(edge_magnitude, 1);
+    figure, imshow(filtered);
+    pause
+end
+
+
+
 %     ImgMat = im2double(I); ImgMat(:,:,1) = im2double(ImgMat(:,:,1)).*mask;
 %     ImgMat(:,:,2) = im2double(ImgMat(:,:,2)).*mask;
 %     ImgMat(:,:,3) = im2double(ImgMat(:,:,3)).*mask;
@@ -333,107 +475,67 @@ for k=1:5
 %     end
 %     imshow(outImg); 
 %   
-    masked = im2double(I); 
-    masked(:,:,1) = masked(:,:,1).*mask;
-    masked(:,:,2) = masked(:,:,2).*mask;
-    masked(:,:,3) = masked(:,:,3).*mask;
-    
-    filtered1 = Kuwahara(masked(:,:,1),4*4+1);
-    filtered1 = filtered1.*imopen(bwareaopen(filtered1>0.2,1000),strel('square',5));
-    filtered2 = Kuwahara(masked(:,:,2),4*4+1);
-    filtered2 = filtered2.*imopen(bwareaopen(filtered2>0.2,1000),strel('square',5));
-    filtered3 = Kuwahara(masked(:,:,3),4*4+1);
-    filtered3 = filtered3.*imopen(bwareaopen(filtered3>0.2,1000),strel('square',5));
-    filtered = im2double(cat(3,filtered1,filtered2,filtered3));
 
-    for i=1:size(filtered,1)
-        for j=1:size(filtered,2)
-            c = reshape(filtered(i,j,:),1,3);
-            if(sum(c) == 0)
-                continue;
-            end
-            colors = getColors(i,j,obj_chess,100);
-            v = zeros(1,size(colors,2));
-            for l=1:size(v,2)
-                v(l) = norm(colors(:,l)-c');
-            end
-            idx = find(v==min(v));
-            c = colors(:,max(idx));
-            if(max(c)>0)
-                c = c./max(c);
-            end
-            filtered(i,j,:) = reshape(c,1,1,3);
-        end
-    end
-    
-    imshow(filtered);
-    [edge_magnitude, edge_orientation, Jx, Jy, Jxy] = coloredges(filtered);
-    edge_magnitude = bwareaopen(edge_magnitude>0.4,10);
-    edge_magnitude = filledgegaps(edge_magnitude,10)+edge(mask);
-    [rj, cj, re, ce] = findendsjunctions(edge_magnitude, 1);
-end
-
-
-imshow(edge_magnitude);
-
-Dx = (im2double(Jx)-im2double(Jy))>0.4;
-Dx = bwareaopen(Dx,20);
-Dx = filledgegapsel(Dx,3,20);
-imshow(Dx)
-
-[rj, cj, re, ce] = findendsjunctions(Dx, 1);
-
-Dy = (im2double(Jy)-im2double(Jx))>0.4;
-Dy = bwareaopen(Dy,20);
-
-imshowpair(Dx,Dy,'falsecolor');
-
-
-
-Dxj = filledgegaps(Dx,10);
-Dxj = filledgegapsel(Dxj,3,50);
-imshowpair(Dxj,Dx,'falsecolor');
-
-Jx = imopen(Jx>0.4,strel('square',2));
-Jx = bwareaopen(Jx>0.4,20);
-Jx = medfilt2(Jx,[7,2]);
-
-Jx = bwareaopen(Jx,150);
-Jy = bwareaopen(Jy>0.4,100);
-Jy = medfilt2(Jy,[2,7]);
-Jy = filledgegapsel(Jy,25,3);
-Jxy = Jx & Jy;
-figure, imshowpair(imdilate(Jxy,strel('disk',5)),filtered,'falsecolor');
-        
-
-
-
-
-
-imshow(RGB)
-axis off
-title('RGB Segmented Image')
-
-for i=1:size(obj_chess,1)
-    for j=1:size(obj_chess(i).chess,2) %Inew = I.*repmat(M,[1,1,3]);
-        mask = bwconvhull(obj_chess(i).chess(j).mask);
-        mask = imdilate(mask,strel('square',25));
-        filtered1 = Kuwahara(im2double(I(:,:,1)).*mask,4*4+1);
-        filtered2 = Kuwahara(im2double(I(:,:,2)).*mask,4*4+1);
-        filtered3 = Kuwahara(im2double(I(:,:,3)).*mask,4*5+1);
-        filtered = cat(3,filtered1,filtered2,filtered3);
-        [edge_magnitude, edge_orientation, Jx, Jy, Jxy] = coloredges(filtered);
-        Jx = bwareaopen(Jx>0.4,100);
-        Jx = medfilt2(Jx,[7,2]);
-        Jx = filledgegapsel(Jx,1,25);
-        Jx = bwareaopen(Jx,150);
-        Jy = bwareaopen(Jy>0.4,100);
-        Jy = medfilt2(Jy,[2,7]);
-        Jy = filledgegapsel(Jy,25,3);
-        Jxy = Jx & Jy;
-        figure, imshowpair(imdilate(Jxy,strel('disk',5)),filtered,'falsecolor');
-    end
-end
+% imshow(edge_magnitude);
+% 
+% Dx = (im2double(Jx)-im2double(Jy))>0.4;
+% Dx = bwareaopen(Dx,20);
+% Dx = filledgegapsel(Dx,3,20);
+% imshow(Dx)
+% 
+% [rj, cj, re, ce] = findendsjunctions(Dx, 1);
+% 
+% Dy = (im2double(Jy)-im2double(Jx))>0.4;
+% Dy = bwareaopen(Dy,20);
+% 
+% imshowpair(Dx,Dy,'falsecolor');
+% 
+% 
+% 
+% Dxj = filledgegaps(Dx,10);
+% Dxj = filledgegapsel(Dxj,3,50);
+% imshowpair(Dxj,Dx,'falsecolor');
+% 
+% Jx = imopen(Jx>0.4,strel('square',2));
+% Jx = bwareaopen(Jx>0.4,20);
+% Jx = medfilt2(Jx,[7,2]);
+% 
+% Jx = bwareaopen(Jx,150);
+% Jy = bwareaopen(Jy>0.4,100);
+% Jy = medfilt2(Jy,[2,7]);
+% Jy = filledgegapsel(Jy,25,3);
+% Jxy = Jx & Jy;
+% figure, imshowpair(imdilate(Jxy,strel('disk',5)),filtered,'falsecolor');
+%         
+% 
+% 
+% 
+% 
+% 
+% imshow(RGB)
+% axis off
+% title('RGB Segmented Image')
+% 
+% for i=1:size(obj_chess,1)
+%     for j=1:size(obj_chess(i).chess,2) %Inew = I.*repmat(M,[1,1,3]);
+%         mask = bwconvhull(obj_chess(i).chess(j).mask);
+%         mask = imdilate(mask,strel('square',25));
+%         filtered1 = Kuwahara(im2double(I(:,:,1)).*mask,4*4+1);
+%         filtered2 = Kuwahara(im2double(I(:,:,2)).*mask,4*4+1);
+%         filtered3 = Kuwahara(im2double(I(:,:,3)).*mask,4*5+1);
+%         filtered = cat(3,filtered1,filtered2,filtered3);
+%         [edge_magnitude, edge_orientation, Jx, Jy, Jxy] = coloredges(filtered);
+%         Jx = bwareaopen(Jx>0.4,100);
+%         Jx = medfilt2(Jx,[7,2]);
+%         Jx = filledgegapsel(Jx,1,25);
+%         Jx = bwareaopen(Jx,150);
+%         Jy = bwareaopen(Jy>0.4,100);
+%         Jy = medfilt2(Jy,[2,7]);
+%         Jy = filledgegapsel(Jy,25,3);
+%         Jxy = Jx & Jy;
+%         figure, imshowpair(imdilate(Jxy,strel('disk',5)),filtered,'falsecolor');
+%     end
+% end
 
 %% Fissa il centro degli assi
 % inv_BW_axis = uint8(obj_red.black_white|obj_yellow.black_white);

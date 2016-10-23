@@ -13,13 +13,13 @@ K = zeros(size(O));
 K(:,:,1) = R.*(2-L);
 K(:,:,2) = G.*(2-L);
 K(:,:,3) = B.*(2-L);
-M = mean(max(max(K(:,:,1),max(K(:,:,2),K(:,:,3)))));
-T = 0.3*mean([graythresh(K(:,:,1)),graythresh(K(:,:,2)),graythresh(K(:,:,3))]);
-R1 = K(:,:,1); R1(R<T) = 0;
-G1 = K(:,:,2); G1(G<T) = 0;
-B1 = K(:,:,3); B1(B<T) = 0;
+% M = mean(max(max(K(:,:,1),max(K(:,:,2),K(:,:,3)))));
+% T = 0.3*mean([graythresh(K(:,:,1)),graythresh(K(:,:,2)),graythresh(K(:,:,3))]);
+% R1 = K(:,:,1); R1(R<T) = 0;
+% G1 = K(:,:,2); G1(G<T) = 0;
+% B1 = K(:,:,3); B1(B<T) = 0;
 I = im2uint8(K);
-I(repmat(R1==0 & G1 == 0 & B1 == 0,1,3)) = 0;
+% I(repmat(R1==0 & G1 == 0 & B1 == 0,1,3)) = 0;
 %% Segmentazione
 obj_red = createMask(I,'red');
 obj_green = createMask(I,'green');
@@ -427,9 +427,27 @@ KEY = (1-Key);
 ORIG = rgb2gray(im2double(O));
 [key_filtered, key_filtered_x, key_filtered_y] = absimfilter(KEY,fspecial('prewit'));
 [orig_filtered, orig_filtered_x, orig_filtered_y] = absimfilter(ORIG,fspecial('prewit'));
+% 
+% [eeee, eeeee, eeeeee] = absimfilter(L,fspecial('sobel'));
+% bw = im2bw(eeee,0.3*graythresh(eeee.*FullMask));
+% bw = imdilate(bw,strel('square',2));
+% bw = imerode(bw,strel('square',5));
+
 img_filtered = 0.5*(key_filtered+orig_filtered);
 
-bw = im2bw(img_filtered,graythresh(img_filtered.*FullMask));
+% ORIG_Kywahara = Kuwahara(ORIG,(4*1+1));
+% ORIG_edge = edge(ORIG_Kywahara,'canny').*FullMask;
+% ORIG_edge = imdilate(ORIG_edge,strel('square',4));
+% ORIG_edge = imopen(ORIG_edge,strel('square',4));
+% ORIG_edge = bwareaopen(ORIG_edge, 4000); % Parametro
+% ORIG_edge = imerode(ORIG_edge,strel('square',4));
+% ORIG_edge = bwareaopen(ORIG_edge, 4000); % Parametro
+% ORIG_edge = imclose(ORIG_edge,strel('square',4));
+% img_filtered = ORIG_edge.*FullMask;
+% 
+% imshow(imfilter(1-Key,fspecial('unsharp')))
+
+bw = im2bw(img_filtered,graythresh(img_filtered.*FullMask)); % Se si cambia la soglia qua non funge più un cazzo
 bw = bwareaopen(bw, 100); % Parametro
 grid_image = false(size(bw));
 horizontalCell = cell(5,20);
@@ -453,7 +471,7 @@ for k=1:5
     bw_edge = filledgegaps(bw.*mask,1);
     CC = bwconncomp(~bw_edge,4);
     for i=1:size(CC.PixelIdxList,2)
-        if(size(CC.PixelIdxList{i},1)<40)
+        if(size(CC.PixelIdxList{i},1)<100)
             bw_edge(CC.PixelIdxList{i}) = 1;
         end
     end
@@ -482,9 +500,9 @@ for k=1:5
     tmp_grid_image = horizontal_image;
     horizontal_image = imdilate(horizontal_image,strel('disk',2));
     verticalEdgeImage = imfilter(bw_edge, [-1 0 1]);
-    verticalEdgeImage = bwareaopen(verticalEdgeImage, 50); % Parametro
+    verticalEdgeImage = bwareaopen(verticalEdgeImage, 20); % Parametro
     verticalEdgeImage = (verticalEdgeImage - horizontal_image)>0;
-    verticalEdgeImage = filledgegapsel(verticalEdgeImage,2,6);
+    verticalEdgeImage = filledgegapsel(verticalEdgeImage,3,8);
     verticalEdgeImage = bwareaopen(verticalEdgeImage, 100); % Parametro
     CCv = bwconncomp(verticalEdgeImage,8);
     vertical_image = false(size(verticalEdgeImage));

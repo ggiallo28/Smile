@@ -61,7 +61,7 @@ switch band
             white = sum(sum(img));
             black = size(img,1)*size(img,2);
             %figure, imshow(img);
-            if(white<0.2*black)
+            if(white<0.3*black) % Portato a 0.3 prima era 0.2
                BW(CC.PixelIdxList{i}) = 0; 
             end
         end
@@ -189,7 +189,7 @@ switch band
 
         % Define thresholds for channel 2 based on histogram settings
         channel2Min = 0.405;
-        channel2Max = 0.910;
+        channel2Max = 0.962;
 
         % Define thresholds for channel 3 based on histogram settings
         channel3Min = 0.000;
@@ -272,7 +272,7 @@ for i = 1:size(x,1)
         BW_TMP = false(size(blackwhite_BW));
         BW_TMP(CC.PixelIdxList{1}) = 1;
         bbs = cell2mat(struct2cell(regionprops(BW_TMP,'BoundingBox')));
-        if(bbs(3)*bbs(4) < 2000)
+        if(bbs(3)*bbs(4) < 3000)
             uno = maskedRGBImage(:,:,1);
             due = maskedRGBImage(:,:,2);
             tre = maskedRGBImage(:,:,3);
@@ -303,9 +303,14 @@ for i = 1:size(x,1)
 %         y_sides = bwareaopen(y_sides & ~xy_sides, 5);
         if((stats(4) + stats(8))< 0.5*size(maskedRGBImage,1))
             mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
-            en = abs(y(i,2)-y(i,1))/3;
-            y(i,1) = round(y(i,1)-en);
-            y(i,2) = round(y(i,2)+en);
+            %en = abs(y(i,2)-y(i,1))/3;
+            en = min(stats(4),stats(8)); % Modificato perchè a volte dei due blob quello sopra/sotto è più lungo dato che ha connesso anche la tessera adiacente, allungo solo se non vado oltre l'immagine
+            if(round(y(i,1)-en)>0)
+                y(i,1) = round(y(i,1)-en);
+            end
+            if(round(y(i,2)+en)<size(maskedRGBImage,1))
+                y(i,2) = round(y(i,2)+en);
+            end
             mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
             color_square =  BW&mask;
             side = mean(x(i,1),x(i,2))<size(maskedRGBImage,2)*0.5;
@@ -322,7 +327,7 @@ for i = 1:size(x,1)
     image = rgb2gray(RGB);
     square = image.*uint8(mask);
     square =  square(y(i,1):y(i,2),x(i,1):x(i,2));
-    square_bw = im2bw(square,0.6); % Parametro
+    square_bw = im2bw(square,0.4); % Parametro
     square_bw = bwareaopen(square_bw, 400); % Parametro
     blackwhite_BW(y(i,1):y(i,2),x(i,1):x(i,2)) = blackwhite_BW(y(i,1):y(i,2),x(i,1):x(i,2)) + square_bw;
     if(sum(sum(bwconvhull(square_bw)))>0.2*size(square_bw,1)*size(square_bw,2))
