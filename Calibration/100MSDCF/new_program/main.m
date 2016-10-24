@@ -698,7 +698,6 @@ end
 %% TODO: Il prof ha detto di stimare la differenza di colore negli histogrammi del rosso al centro e del rosso a destra
 
 %% Come stimo l'angolo degli specchi?
-%% Costants
 
 
 
