@@ -1,15 +1,15 @@
 clc; clear all; close all;
 %% Costants
-lengthMirrors = 65.5;       %cm
-mirror2Pivot = 3;           %cm Ci sta una struttura ad angolo retto che collega lo specchio all'ase di rotazione, abbiamo lungo l'asse dello specchio uno sfasamento di 3 cm
-offset2Mirror = 3.2;        %cm ed uno sfasamento di 3.2 cm in avanti.
+lengthMirrors = 65;         %cm
+mirror2Pivot = 2.5;         %cm Ci sta una struttura ad angolo retto che collega lo specchio all'ase di rotazione, abbiamo lungo l'asse dello specchio uno sfasamento di 2.5 cm
+offset2Mirror = 3;          %cm ed uno sfasamento di 3 cm in avanti.
 pivot2pivot = 28.5;         %cm Distanza tra i due perni
-lengthHead = 20;            %cm % vertical 2*radius
+lengthHead = 15;            %cm % vertical 2*radius
 widthHead = 10;             %cm % horizontal 2*radius
 %% Parameters
-angleRightMirror = 67.5;    %deg
-angleLeftMirror = 112.5;    %deg
-distanceCamera = 70;       %cm
+angleRightMirror = 71.5;      %deg
+angleLeftMirror = 180-angleRightMirror;      %deg
+distanceCamera = 220;       %cm
 fovHCamera = 83;            %deg
 headPosx = 0.5*pivot2pivot; %cm % x0,y0 ellipse centre coordinates
 headPosy = 20;              %cm
@@ -58,6 +58,7 @@ angleHead = rad2deg(atan2((-headPosy-mirrorsCenter(2)),(headPosx-mirrorsCenter(1
 if angleHead<0
     angleHead = -angleHead;
 end
+vH = genMirroring(angleLeftMirror, angleRightMirror, angleHead, N);
 
 % [el_x, el_y] = genHead(headPosx, -headPosy, widthHead, lengthHead);
 % v = genMirroring(angleLeftMirror, angleRightMirror, angleHead, N);
@@ -141,7 +142,7 @@ for i=1:size(xRange,2)
     end
     v = genMirroring(angleLeftMirror, angleRightMirror, anglePoint, N);
     for j=1:floor(N)-1
-       [XRange(j,i),YRange(j,i)] = rotate(xRange(i),yRange(i),mirrorsCenter(1),mirrorsCenter(2),v(1,j),'z'); 
+       [XRange(j,i),YRange(j,i)] = rotate(xRange(i),yRange(i),mirrorsCenter(1),mirrorsCenter(2),v(1,j),'z');
     end 
 end
 
@@ -273,5 +274,24 @@ for i=1:size(v,2);
         end
     end
 end
+%% Test se abbiamo intersezione
+radius = pdist([mirrorsCenter;[headPosx, -headPosy]],'euclidean');
+%circle(mirrorsCenter(1),mirrorsCenter(2),radius);
+P1 = [-35.415,13.75];
+P2 = [63.73,13.76];
+PC = [14.1200,-20];
+d1 = pdist([P1;PC],'euclidean');
+d2 = pdist([P2;PC],'euclidean');
+a1 = asin(d1/(2*radius));
+a2 = asin(d2/(2*radius));
+% Se non abbiamo intersezione bisogna considerare il punto tangente
+% EQ1 = y - yd - m*(x - xd)
+% EQ2 = -r + (x-xc)^2 + (y-yc)^2 % Sostitusico la nella 2 con la 1
+syms r x xc yc xd yd r m 
+EQ = -r + (x-xc)^2 + (yd + m*(x - xd)-yc)^2;
+c = -r + (0-xc)^2 + (yd + m*(0 - xd)-yc)^2;
+a = m^2 + 1;
+b = subs(EQ - c - x*x*a,x,1);
+solve(b*b-4*a*c,m)
 %% TODO calcolare indice di copertura
 

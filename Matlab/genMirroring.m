@@ -9,7 +9,6 @@ function [v] = genMirroring( angleLeftMirror, angleRightMirror, anglePoint, N)
     v(1,1) = -2*h2m(1); v(1,2) = 2*h2m(2);
     for i=3:floor(N)-1
         if(isLeft)
-            l
             v(1,i) = v(1,i-2) - 2*h2m(l);
             if l==1
                 l = 2;
@@ -17,7 +16,6 @@ function [v] = genMirroring( angleLeftMirror, angleRightMirror, anglePoint, N)
                 l = 1;
             end
         else
-            r
             v(1,i) = v(1,i-2) + 2*h2m(r);
             if r==1
                 r = 2;
