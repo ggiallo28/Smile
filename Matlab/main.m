@@ -277,14 +277,18 @@ end
 %% Test se abbiamo intersezione
 radius = pdist([mirrorsCenter;[headPosx, -headPosy]],'euclidean');
 %circle(mirrorsCenter(1),mirrorsCenter(2),radius);
-P1 = [-35.415,13.75];
-P2 = [63.73,13.76];
-PC = [14.1200,-20];
+% Se abbiamo intersezione basta trovare l'intersezione tra le rette che passano per gli estremi degli specchi e il centro camera, in questo modo otteniamo il settore 
+% angolare dove le teste sono visibili.
+P1 = [-35.415,13.75]; % Punto a sinistra
+P2 = [63.73,13.76]; % Punto a destra
+PC = [14.1200,-20]; % Punto centrale
 d1 = pdist([P1;PC],'euclidean');
 d2 = pdist([P2;PC],'euclidean');
-a1 = asin(d1/(2*radius));
-a2 = asin(d2/(2*radius));
-% Se non abbiamo intersezione bisogna considerare il punto tangente
+a1 = asin(d1/(2*radius)); % settore angolare sinistro, da considerarsi positivo data la convenzione vH e il sistema di riferimento usato
+a2 = asin(d2/(2*radius)); % settore angolare destro, da considerarsi negativo data la convenzione vH e il sistema di riferimento usato
+% Il sistema di riferimento ha X -> Y verso il basso e Z entrante: è centrato dove si trova il pivot sinistro.
+
+% Se non abbiamo intersezione (delta negativo) bisogna considerare il punto tangente
 % EQ1 = y - yd - m*(x - xd)
 % EQ2 = -r + (x-xc)^2 + (y-yc)^2 % Sostitusico la nella 2 con la 1
 syms r x xc yc xd yd r m 
@@ -293,5 +297,7 @@ c = -r + (0-xc)^2 + (yd + m*(0 - xd)-yc)^2;
 a = m^2 + 1;
 b = subs(EQ - c - x*x*a,x,1);
 solve(b*b-4*a*c,m)
+% Il punto tangente è caratterizzato dall'avere un delta nullo.
+% trovati i settori angolari saranno visibili le sole teste che avranno angolo compreso tra il minimo e il massimo settore angolare
 %% TODO calcolare indice di copertura
 
