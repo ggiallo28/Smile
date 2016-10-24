@@ -662,6 +662,13 @@ for l=1:size(obj_chess,1)
     end
 end
 
+%% Mapping sulla superficie del Manifold
+axis_line = reshape([192,192,192;192,192,192],2,1,3);
+checher_vector_with_axis = uint8([checker_vector(:,1:3,:),axis_line,checker_vector(:,4:6,:)]); 
+figure, imshow(checher_vector_with_axis);
+
+% La checker è suddivisa verticalmente in 4 quadrati, ciò significa 5 punti compresi quelli di intersezione
+% Ogni quadrante rappresenta 45°, quindi ad ogni punto corrisponde un angolo di 9°
 for l=1:size(obj_chess,1)
     for i=1:size(obj_chess(l).chess(1).intersections_x,1)
         for j=1:size(obj_chess(l).chess(1).intersections_x,2)
@@ -669,16 +676,33 @@ for l=1:size(obj_chess,1)
             vect_x = [];
             vect_y = [];
             for k =1:size(obj_chess(l).chess,2)
+                axis_distance = axisdistance(obj_chess(l).name,obj_chess(l).chess(k).background,checher_vector_with_axis);
+                adjusted_distance = axis_distance-1*sign(axis_distance); % Se positivo togliamo 1, se negativo aggiungiamo 1, le tessere gialle e rosse stanno a distanza zero.
+                if(sign(axis_distance) >0)
+                    adjusted_offset = (j-1)*11.25;
+                else
+                    adjusted_offset = (j-size(obj_chess(l).chess(k).intersections_x,2))*11.25;
+                end
+                angle = adjusted_distance*45 + adjusted_offset
+                h = i*2.6
                 vect_x = [vect_x, obj_chess(l).chess(k).intersections_x(i,j)];
                 vect_y = [vect_y, obj_chess(l).chess(k).intersections_y(i,j)];
             end
-            vect_x
-            vect_y
             scatter(vect_x(:),vect_y(:)); hold off
             pause
         end
     end
 end
+
+%% Ora come associo i punti se levo il cilindro? Con il codice che già hanno ma usando la griglia.
+%% TODO: Il prof ha detto di stimare la differenza di colore negli histogrammi del rosso al centro e del rosso a destra
+
+%% Come stimo l'angolo degli specchi?
+%% Costants
+
+
+
+
 
     % Allineamento a sinistra/destra delle matrici: operazione necessaria
     % prima del flip per generare le corrispondenze.
