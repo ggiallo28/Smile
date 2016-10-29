@@ -1,4 +1,4 @@
-clc; clear all; close all;
+ clc; clear all; close all;
 %% Costants
 lengthMirrors = 65;         %cm
 mirror2Pivot = 2.5;         %cm Ci sta una struttura ad angolo retto che collega lo specchio all'ase di rotazione, abbiamo lungo l'asse dello specchio uno sfasamento di 2.5 cm
