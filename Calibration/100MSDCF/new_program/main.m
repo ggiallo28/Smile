@@ -141,9 +141,12 @@ for l=1:size(obj_chess,1)
             empty_type = true;
         end
     end
+    % Se sono rimaste tessere senza nessuna labels associata
     if(empty_type)
         for i = 1:size(obj_chess(l).chess,2)
+            % Se non si tratta di una tessera centrale, non ha senso analzizarla di sicuro non è ne primaria ne secondaria
             if(~strcmp(obj_chess(l).chess(i).position,positions(2)))
+                % Recovery del colore, non siamo in grado di distinguere tra il viola/rosso blu/azzurro
                 curr_color = name2code(obj_chess(l).name);
                 curr_background = name2code(obj_chess(l).chess(i).background);
                 idc = find(sum(checker_vector(1,:,:),3)==sum(curr_background));
@@ -152,9 +155,18 @@ for l=1:size(obj_chess,1)
                 else
                 	curr_color = curr_color(2,:);
                 end
+                % Cerchiamo la tessera corrente nel vettore di ordine
                 idx = find(order(3,:) == obj_chess(l).chess(i).centroid(1));
+                % Cerchiamo la posizione della tessera centrale
                 labs = find(strcmp(label(3,:),positions(2)));
+                % Se idx è precedente della prima tessera centrale e non è la prima tessera
+                % Allora guardiamo a sinistra e preleviamo il colore della tessera che sta a sinsitra della corrente 
+                
+                % DOMANDA: Se è la prima tessera idx = 1 a non avere associazione? Questo non può capitare
+                % devo vedere almeno due colori per riflesso, quindi della tessera con idx=1 devo necessariamnte vedere due rifelssi
+                % a sinistra e uno a destra, idem per l'ultima due a destra e uno a sinistra. Questo caso è gestito precedentemente.
                 if(idx < labs(1) && idx~=1)
+                    % Recovery del colore, non siamo in grado di distinguere tra il viola/rosso blu/azzurro
                     color = name2code(obj_chess(order(1,idx-1)).name);
                     background = name2code(obj_chess(order(1,idx-1)).chess(order(2,idx-1)).background);
                     idc = find(sum(checker_vector(1,:,:),3)==sum(background));
@@ -163,6 +175,8 @@ for l=1:size(obj_chess,1)
                     else
                         color = color(2,:);
                     end
+                    % Sfruttiamo il checker vector, se i colori sono invertiti rispetto all'ordine originale allora
+                    % abbiamo un riflesso primario, altrimenti abbiamo un riflesso secondario. 
                     check = checker_vector(2,:,:);
                     ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
                     jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
