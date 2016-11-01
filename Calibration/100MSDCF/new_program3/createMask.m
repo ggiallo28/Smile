@@ -266,7 +266,7 @@ for i = 1:size(x,1)
             color_square(y(i,2)-3:y(i,2),round(Xbot-len/2):round(Xbot+len/2)) = 255;
         end
     end
-    color_square = fitSquare(color_square); 
+    color_square = fitSquare(color_square,x(i,1),x(i,2)); 
     mask = ~BW&mask&color_square;
     mask = imerode(mask,strel('line',7,0));
     image = rgb2gray(RGB);
@@ -282,12 +282,12 @@ for i = 1:size(x,1)
     end
     inv_BW = inv_BW + mask;
 end
+inv_BW = bwareaopen(inv_BW,100);
 y(ii,:) = [];
 x(ii,:) = [];
 colors(:,ii) = [];
 obj.bbox_x = x;
 obj.bbox_y = y;
-obj.color_mask = BW;
 
 %% Fix dei triangoli del background
 CC = bwconncomp(blackwhite_BW);
@@ -380,8 +380,9 @@ for i = 1:size(CC.PixelIdxList,2)
         bwD((s.BoundingBox(2)+3):(s.BoundingBox(2)+s.BoundingBox(4)-3),(s.BoundingBox(1)+3):(s.BoundingBox(1)+s.BoundingBox(3)-3)) = img_fill; 
     end
 end
-inv_BW = bwD-BW;
+inv_BW = bwD & ~BW;
 obj.inv_color_mask = inv_BW;
+obj.color_mask = bwD & ~inv_BW;
 
 
 for i = 1:size(x,1)
@@ -647,7 +648,7 @@ end
 %         end
 %     end
 % end
-
+maskedRGBImage(repmat(~obj.color_mask ,[1 1 3]))= 0;
 obj.masked_rgb = im2uint8(maskedRGBImage);
 disp('ciao');
 close all;
