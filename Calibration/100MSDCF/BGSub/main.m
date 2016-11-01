@@ -33,7 +33,7 @@ ll2 = ll(:); ll2(ll2>=mu) = [];
 p = size(ll1,1)/size(ll2,1);
 [r,c] = size(im1);
 T = round(r*c/7000);
-channel2Min = mu-2.58*p*si;
+channel2Min = mu-2.58*p*si; %2.7 forse meglio
 channel2Max = mu+2.58*(2-p)*si;
 BW1 = (lab1(:,:,2) >= channel2Min ) & (lab1(:,:,2) <= channel2Max);
 maskedRGBImage_im1 = im1;
