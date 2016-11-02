@@ -1,4 +1,4 @@
-function color_square = fitSquare( color_square, x1, x2)
+function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     idx = find(color_square == 1);
     [idx,idy]=ind2sub(size(color_square),idx);
     j = boundary(idx,idy,0.1); % Parametro
@@ -74,6 +74,14 @@ function color_square = fitSquare( color_square, x1, x2)
     plot(line3);
     [line4, ~] = createLine([x1 x2], [yLL(5) yRR(5)]);
     plot(line4);
+    chess.h_lines = cell(1,6);
+    chess.h_lines{1} = fitresult_bot;
+    chess.h_lines{2} = line1;
+    chess.h_lines{3} = line2;
+    chess.h_lines{4} = line3;
+    chess.h_lines{5} = line4;
+    chess.h_lines{6} = fitresult_top;
+    
     image = line2image(line1,size(color_square)) | line2image(line2,size(color_square)) |...
         line2image(line3,size(color_square)) | line2image(line4,size(color_square));
     image = imdilate(image,strel('disk',10));
@@ -133,6 +141,9 @@ function color_square = fitSquare( color_square, x1, x2)
     [idx_right,idy_right]=ind2sub(size(color_square),ccright);
     [fitresult_right, ~] = createLine(idy_right,idx_right);
     plot(fitresult_right);
+    chess.v_lines = cell(1,2);
+    chess.v_lines{1} = fitresult_left;
+    chess.v_lines{2} = fitresult_right;
 %% PLOT   
     xx = -40:0.001:size(color_square,2)+40;
     [~,ii] = min(abs(fitresult_bot(xx(:)) - fitresult_left(xx(:))));

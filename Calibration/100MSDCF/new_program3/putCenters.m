@@ -1,6 +1,5 @@
 function obj = putCenters(obj, xOffset, yOffset, centers, index, img_dim)
     arr= struct2cell(centers);
-    obj.chess(index) = objChess();
     x = zeros(1,size(centers,1));
     y = zeros(1,size(centers,1));
     offset = 0;

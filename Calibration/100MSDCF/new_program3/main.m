@@ -284,26 +284,62 @@ maskL1 = false(size(fuse,1),size(fuse,2));
 maskL2 = false(size(fuse,1),size(fuse,2));
 maskR1 = false(size(fuse,1),size(fuse,2));
 maskR2 = false(size(fuse,1),size(fuse,2));
+gapC  = false(size(fuse,1),size(fuse,2));
+gapL1 = false(size(fuse,1),size(fuse,2));
+gapL2 = false(size(fuse,1),size(fuse,2));
+gapR1 = false(size(fuse,1),size(fuse,2));
+gapR2 = false(size(fuse,1),size(fuse,2));
 
 for i=1:size(obj_chess,1)
     for j=1:size(obj_chess(i).chess,2) %Inew = I.*repmat(M,[1,1,3]);
         if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
-            maskL2 = maskL2 | obj_chess(i).chess(j).mask;
+            gapL2 = gapL2 | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
+            maskL2 = (maskL2 | obj_chess(i).chess(j).mask);
         end
         if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Primary'))
+            gapR1 = gapR1 | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskR1 = maskR1 | obj_chess(i).chess(j).mask;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Primary'))
+            gapL1 = gapL1 | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskL1 = maskL1 | obj_chess(i).chess(j).mask;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
+            gapR2 = gapR2 | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskR2 = maskR2 | obj_chess(i).chess(j).mask;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Center'))
+            gapC = gapC | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskC = maskC | obj_chess(i).chess(j).mask;
         end
     end
 end
+% Usare is left o right per unire i contorni a metà
+gapC = filledgegaps(gapC,150);
+gapC = imdilate(gapC,strel('disk',3));
+maskC = maskC & ~gapC;
+maskC = imopen(maskC,strel('square',2));
+
+gapL2 = filledgegaps(gapL2,50);
+gapL2 = imdilate(gapL2,strel('disk',3));
+maskL2 = maskL2 & ~gapL2;
+maskL2 = imopen(maskL2,strel('square',3));
+
+gapL1 = imclose(gapL1,strel('disk',10));
+gapL1 = filledgegaps(gapL1,20);
+gapL1 = imdilate(gapL1,strel('disk',3));
+maskL1 = maskL1 & ~gapL1;
+maskL1 = imopen(maskL1,strel('square',3));
+
+gapR2 = filledgegaps(gapR2,150);
+gapR2 = imdilate(gapR2,strel('disk',3));
+maskR2 = maskR2 & ~gapR2;
+maskR2 = imopen(maskR2,strel('square',3));
+
+gapR1 = filledgegaps(gapR1,50);
+gapR1 = imdilate(gapR1,strel('disk',3));
+maskR1 = maskR1 & ~gapR1;
+maskR1 = imopen(maskR1,strel('square',3));
 
 for k=1:5
     switch(k)
@@ -507,6 +543,41 @@ plot(right_fitresult,'r');
 plot(mid_fitresult, 'y');
 legend('left axis', 'right axis', 'center axis');
 %% Corner
+CL2 = imerode(maskL2I,strel('square',25)) & ~maskL2;
+CR2 = maskR2I & ~maskR2;
+CL1 = maskL1I & ~maskL1;
+CR1 = maskR1I & ~maskR1;
+CCM = maskCI & ~maskC;
+CL2v = bwareaopen(imfilter(CL2,[-1 0 1]),100) | bwareaopen(imfilter(CL2,[1 0 -1]),100);
+CL2h = getHImage('Left','Secondary',obj_chess, order, label, size(CL2));
+CL2h = imdilate(CL2h,strel('disk',5));
+CL2v = CL2v - CL2h;
+CL2v(CL2v<0) = 0;
+CL2v = bwareaopen(CL2v,100);
+props = regionprops(CL2v,'Centroid');
+props = reshape(cell2mat(struct2cell(props)),2,size(props,1));
+props = [1:size(props,2);props];
+[props(2,:), props(1,:)] = sort(props(2,:));
+props(3,:) = props(3, props(1,:));
+CC = bwconncomp(CL2v,8);
+line1 = [CC.PixelIdxList{props(1,1)};CC.PixelIdxList{props(1,2)};CC.PixelIdxList{props(1,3)};CC.PixelIdxList{props(1,4)};CC.PixelIdxList{props(1,5)};CC.PixelIdxList{props(1,6)};CC.PixelIdxList{props(1,7)};CC.PixelIdxList{props(1,8)};CC.PixelIdxList{props(1,9)};CC.PixelIdxList{props(1,10)}];
+line2 = [CC.PixelIdxList{props(1,11)};CC.PixelIdxList{props(1,12)};CC.PixelIdxList{props(1,13)};CC.PixelIdxList{props(1,14)};CC.PixelIdxList{props(1,15)};CC.PixelIdxList{props(1,16)};CC.PixelIdxList{props(1,17)};CC.PixelIdxList{props(1,18)};CC.PixelIdxList{props(1,19)};CC.PixelIdxList{props(1,20)}];
+[line1y,line1x] = ind2sub(size(CL2v),line1); 
+[line1_fitresult, ~] = createLineInv(line1y, line1x);
+coeffs = coeffvalues(line1_fitresult);
+x = 1:size(CL2v,1);
+y = round(polyval(coeffs,x));
+plot(y,x,'r'); 
+
+tmp = CL2v;
+for i=1:10
+    tmp(CC.PixelIdxList{props(1,i)}) = 0;
+    imshow(tmp)
+    pause
+end
+
+
+%% Corner
 cymk = rgb2cmyk(I);
 Cyano = im2double(cymk(:,:,1));
 Magenta = im2double(cymk(:,:,2));
@@ -575,7 +646,7 @@ for k=1:5
     CCh = bwconncomp(horizontalEdgeImage,8);
     horizontal_image = false(size(horizontalEdgeImage));
     for i = 1:size(CCh.PixelIdxList,2)
-        [idy,idx] = ind2sub(size(I),CCh.PixelIdxList{i});      
+        [idy,idx] = ind2sub(size(I),CCh.PixelIdxList{i});  % Ma è giusta sta size? I è a 3 dimensioni    
         [horizonta_fitresult, horiz_gof] = createCircle(idx, idy);
         coeffs = coeffvalues(horizonta_fitresult);
         x = 1:size(horizontalEdgeImage,2);

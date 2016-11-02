@@ -208,6 +208,7 @@ blackwhite_BW = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
 colors = [{''}];
 ii = [];
 for i = 1:size(x,1)
+    obj.chess(i) = objChess();
     mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
     mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
     color_square =  BW&mask;
@@ -266,7 +267,7 @@ for i = 1:size(x,1)
             color_square(y(i,2)-3:y(i,2),round(Xbot-len/2):round(Xbot+len/2)) = 255;
         end
     end
-    color_square = fitSquare(color_square,x(i,1),x(i,2)); 
+    [color_square, obj.chess(i)] = fitSquare(color_square,x(i,1),x(i,2),obj.chess(i)); 
     mask = ~BW&mask&color_square;
     mask = imerode(mask,strel('line',7,0));
     image = rgb2gray(RGB);
@@ -334,10 +335,11 @@ for i = 1:size(x,1)
             BW_TMP(CC.PixelIdxList{iter}) = 1;
             s = regionprops(BW_TMP,'BoundingBox');
             img = imcrop(BW_TMP,s.BoundingBox);
+            img = imopen(img,strel('square',5));
             toCompare = bwconvhull(img);
             bboxCorr(iter) = corr2(toCompare,imfill(img,'holes'));
         end
-        if(find(bboxCorr<0.72))
+        if(find(bboxCorr<0.72)) %0.72
             idx = find(bboxCorr<0.72);
             tmp_chess = zeros(size(chess));
             for k=1:size(idx)
