@@ -228,7 +228,7 @@ for l=1:size(obj_chess,1)
                 
                 % DOMANDA: Se è la prima tessera idx = 1 a non avere associazione? Questo non può capitare
                 % devo vedere almeno due colori per riflesso, quindi della tessera con idx=1 devo necessariamnte vedere due rifelssi
-                % a sinistra e uno a destra, idem per l'ultima due a destra e uno a sinistra. Questo caso è gestito precedentemente.
+                % a sinistra o a destra, idem per l'ultima. Il caso una a destra e uno a sinistra è gestito precedentemente.
                 if(idx < labs(1) && idx~=1)
                     % Recovery del colore, non siamo in grado di distinguere tra il viola/rosso blu/azzurro
                     color = name2code(obj_chess(order(1,idx-1)).name);
@@ -314,8 +314,31 @@ for i=1:size(obj_chess,1)
         end
     end
 end
-% Usare is left o right per unire i contorni a metà
-gapC = filledgegaps(gapC,150);
+
+% Conto quante linee ci devono essere in funzione dei colori
+idxLinesCenter = find(strcmp(label(3,:),positions(2)));
+numLinesCenter = size(idxLinesCenter,2)+1;
+idxLinesLeftSec = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(2)));
+numLinesLeftSec = size(idxLinesLeftSec,2)+1;
+idxLinesLeftPri = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(1)));
+numLinesLeftPri = size(idxLinesLeftPri,2)+1;
+idxLinesRightSec = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(2)));
+numLinesRightSec = size(idxLinesRightSec,2)+1;
+idxLinesRightPri = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(1)));
+numLinesRightPri = size(idxLinesRightPri,2)+1;
+
+LinesCenter = cell(1,1); k = 1;
+for i=1:size(idxLinesCenter,2)
+    idx_obj_chess = order(1,idxLinesCenter(i));
+    idx_chess = order(2,idxLinesCenter(i)); 
+    LinesCenter{k} = obj_chess(idx_obj_chess).chess(idx_chess).v_lines{1}; k = k+1;
+    LinesCenter{k} = obj_chess(idx_obj_chess).chess(idx_chess).v_lines{2}; k = k+1;
+end
+LinesCenter = mergeNearestLines(LinesCenter, numLinesCenter, size(maskC));
+gapC  = false(size(fuse,1),size(fuse,2));
+for i=1:size(LinesCenter,2)
+    gapC = gapC | line2image(LinesCenter{i},size(maskC));
+end
 gapC = imdilate(gapC,strel('disk',3));
 maskC = maskC & ~gapC;
 maskC = imopen(maskC,strel('square',2));
@@ -544,10 +567,11 @@ plot(mid_fitresult, 'y');
 legend('left axis', 'right axis', 'center axis');
 %% Corner
 CL2 = imerode(maskL2I,strel('square',25)) & ~maskL2;
-CR2 = maskR2I & ~maskR2;
+CR2 = imerode(maskR2I,strel('square',40)) & ~maskR2;
 CL1 = maskL1I & ~maskL1;
 CR1 = maskR1I & ~maskR1;
 CCM = maskCI & ~maskC;
+CL2 = CR2;
 CL2v = bwareaopen(imfilter(CL2,[-1 0 1]),100) | bwareaopen(imfilter(CL2,[1 0 -1]),100);
 CL2h = getHImage('Left','Secondary',obj_chess, order, label, size(CL2));
 CL2h = imdilate(CL2h,strel('disk',5));
@@ -562,11 +586,14 @@ props(3,:) = props(3, props(1,:));
 CC = bwconncomp(CL2v,8);
 line1 = [CC.PixelIdxList{props(1,1)};CC.PixelIdxList{props(1,2)};CC.PixelIdxList{props(1,3)};CC.PixelIdxList{props(1,4)};CC.PixelIdxList{props(1,5)};CC.PixelIdxList{props(1,6)};CC.PixelIdxList{props(1,7)};CC.PixelIdxList{props(1,8)};CC.PixelIdxList{props(1,9)};CC.PixelIdxList{props(1,10)}];
 line2 = [CC.PixelIdxList{props(1,11)};CC.PixelIdxList{props(1,12)};CC.PixelIdxList{props(1,13)};CC.PixelIdxList{props(1,14)};CC.PixelIdxList{props(1,15)};CC.PixelIdxList{props(1,16)};CC.PixelIdxList{props(1,17)};CC.PixelIdxList{props(1,18)};CC.PixelIdxList{props(1,19)};CC.PixelIdxList{props(1,20)}];
-[line1y,line1x] = ind2sub(size(CL2v),line1); 
+line3 = [CC.PixelIdxList{props(1,21)};CC.PixelIdxList{props(1,22)};CC.PixelIdxList{props(1,23)};CC.PixelIdxList{props(1,24)};CC.PixelIdxList{props(1,25)};CC.PixelIdxList{props(1,26)};CC.PixelIdxList{props(1,27)};CC.PixelIdxList{props(1,28)};CC.PixelIdxList{props(1,29)};CC.PixelIdxList{props(1,30)}];
+line4 = [CC.PixelIdxList{props(1,31)};CC.PixelIdxList{props(1,32)};CC.PixelIdxList{props(1,33)};CC.PixelIdxList{props(1,34)};CC.PixelIdxList{props(1,35)};CC.PixelIdxList{props(1,36)};CC.PixelIdxList{props(1,37)};CC.PixelIdxList{props(1,38)};CC.PixelIdxList{props(1,39)}];
+[line1y,line1x] = ind2sub(size(CL2v),line4); 
 [line1_fitresult, ~] = createLineInv(line1y, line1x);
 coeffs = coeffvalues(line1_fitresult);
 x = 1:size(CL2v,1);
 y = round(polyval(coeffs,x));
+imshow(I); hold on;
 plot(y,x,'r'); 
 
 tmp = CL2v;
