@@ -278,43 +278,33 @@ for j=1:size(order,2)
     idx_color_chess = order(2,j);
     label(4,j) = obj_chess(idx_chess_vector).chess(idx_color_chess).type;
 end
-%% Seprazione Riflessi
+%% Creazione Maschere per separazione riflessi
 maskC  = false(size(fuse,1),size(fuse,2));
 maskL1 = false(size(fuse,1),size(fuse,2));
 maskL2 = false(size(fuse,1),size(fuse,2));
 maskR1 = false(size(fuse,1),size(fuse,2));
 maskR2 = false(size(fuse,1),size(fuse,2));
-gapC  = false(size(fuse,1),size(fuse,2));
-gapL1 = false(size(fuse,1),size(fuse,2));
-gapL2 = false(size(fuse,1),size(fuse,2));
-gapR1 = false(size(fuse,1),size(fuse,2));
-gapR2 = false(size(fuse,1),size(fuse,2));
 
 for i=1:size(obj_chess,1)
     for j=1:size(obj_chess(i).chess,2) %Inew = I.*repmat(M,[1,1,3]);
         if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
-            gapL2 = gapL2 | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskL2 = (maskL2 | obj_chess(i).chess(j).mask);
         end
         if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Primary'))
-            gapR1 = gapR1 | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskR1 = maskR1 | obj_chess(i).chess(j).mask;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Primary'))
-            gapL1 = gapL1 | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskL1 = maskL1 | obj_chess(i).chess(j).mask;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
-            gapR2 = gapR2 | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskR2 = maskR2 | obj_chess(i).chess(j).mask;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Center'))
-            gapC = gapC | line2image(obj_chess(i).chess(j).v_lines{1},size(maskC)) | line2image(obj_chess(i).chess(j).v_lines{2},size(maskC));
             maskC = maskC | obj_chess(i).chess(j).mask;
         end
     end
 end
-
+%% Rifinitura Maschere
 % Conto quante linee ci devono essere in funzione dei colori
 idxLinesCenter = find(strcmp(label(3,:),positions(2)));
 numLinesCenter = size(idxLinesCenter,2)+1;
@@ -327,43 +317,72 @@ numLinesRightSec = size(idxLinesRightSec,2)+1;
 idxLinesRightPri = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(1)));
 numLinesRightPri = size(idxLinesRightPri,2)+1;
 
-LinesCenter = cell(1,1); k = 1;
-for i=1:size(idxLinesCenter,2)
-    idx_obj_chess = order(1,idxLinesCenter(i));
-    idx_chess = order(2,idxLinesCenter(i)); 
-    LinesCenter{k} = obj_chess(idx_obj_chess).chess(idx_chess).v_lines{1}; k = k+1;
-    LinesCenter{k} = obj_chess(idx_obj_chess).chess(idx_chess).v_lines{2}; k = k+1;
-end
+LinesCenter = findLines(idxLinesCenter,  obj_chess, order);
 LinesCenter = mergeNearestLines(LinesCenter, numLinesCenter, size(maskC));
-gapC  = false(size(fuse,1),size(fuse,2));
+gap  = false(size(fuse,1),size(fuse,2));
 for i=1:size(LinesCenter,2)
-    gapC = gapC | line2image(LinesCenter{i},size(maskC));
+    gap = gap | line2image(LinesCenter{i},size(maskC));
 end
-gapC = imdilate(gapC,strel('disk',3));
-maskC = maskC & ~gapC;
-maskC = imopen(maskC,strel('square',2));
+gap = imdilate(gap,strel('disk',3));
+maskC = maskC & ~gap;
+maskC = imopen(maskC,strel('square',3));
 
-gapL2 = filledgegaps(gapL2,50);
-gapL2 = imdilate(gapL2,strel('disk',3));
-maskL2 = maskL2 & ~gapL2;
+LinesLeftSec = findLines(idxLinesLeftSec,  obj_chess, order);
+LinesLeftSec = mergeNearestLines(LinesLeftSec, numLinesLeftSec, size(maskC));
+gap  = false(size(fuse,1),size(fuse,2));
+for i=1:size(LinesLeftSec,2)
+    gap = gap | line2image(LinesLeftSec{i},size(maskC));
+end
+gap = imdilate(gap,strel('disk',3));
+maskL2 = maskL2 & ~gap;
 maskL2 = imopen(maskL2,strel('square',3));
 
-gapL1 = imclose(gapL1,strel('disk',10));
-gapL1 = filledgegaps(gapL1,20);
-gapL1 = imdilate(gapL1,strel('disk',3));
-maskL1 = maskL1 & ~gapL1;
+LinesLeftPri = findLines(idxLinesLeftPri,  obj_chess, order);
+LinesLeftPri = mergeNearestLines(LinesLeftPri, numLinesLeftPri, size(maskC));
+gap  = false(size(fuse,1),size(fuse,2));
+for i=1:size(LinesLeftPri,2)
+    gap = gap | line2image(LinesLeftPri{i},size(maskC));
+end
+gap = imdilate(gap,strel('disk',3));
+maskL1 = maskL1 & ~gap;
 maskL1 = imopen(maskL1,strel('square',3));
 
-gapR2 = filledgegaps(gapR2,150);
-gapR2 = imdilate(gapR2,strel('disk',3));
-maskR2 = maskR2 & ~gapR2;
+LinesRightSec = findLines(idxLinesRightSec,  obj_chess, order);
+LinesRightSec = mergeNearestLines(LinesRightSec, numLinesRightSec, size(maskC));
+gap  = false(size(fuse,1),size(fuse,2));
+for i=1:size(LinesRightSec,2)
+    gap = gap | line2image(LinesRightSec{i},size(maskC));
+end
+gap = imdilate(gap,strel('disk',3));
+maskR2 = maskR2 & ~gap;
 maskR2 = imopen(maskR2,strel('square',3));
 
-gapR1 = filledgegaps(gapR1,50);
-gapR1 = imdilate(gapR1,strel('disk',3));
-maskR1 = maskR1 & ~gapR1;
+LinesRightPri = findLines(idxLinesRightPri,  obj_chess, order);
+LinesRightPri = mergeNearestLines(LinesRightPri, numLinesRightPri, size(maskC));
+gap  = false(size(fuse,1),size(fuse,2));
+for i=1:size(LinesRightPri,2)
+    gap = gap | line2image(LinesRightPri{i},size(maskC));
+end
+gap = imdilate(gap,strel('disk',3));
+maskR1 = maskR1 & ~gap;
 maskR1 = imopen(maskR1,strel('square',3));
-
+%% Ripulisco maschere da oggetti piccoli
+statsL2 = cell2mat(struct2cell(regionprops(maskC,'Area')));
+maskL2 = bwareaopen(maskL2,round(0.1*(mean(statsL2)-std(statsL2))));
+figure, imshow(maskL2);
+statsL1 = cell2mat(struct2cell(regionprops(maskL1,'Area')));
+maskL1 = bwareaopen(maskL1,round(0.1*(mean(statsL1)-std(statsL1))));
+figure, imshow(maskL1);
+statsC = cell2mat(struct2cell(regionprops(maskC,'Area')));
+maskC = bwareaopen(maskC,round(0.1*(mean(statsC)-std(statsC))));
+figure, imshow(maskC);
+statsR1 = cell2mat(struct2cell(regionprops(maskC,'Area')));
+maskR1 = bwareaopen(maskR1,round(0.1*(mean(statsR1)-std(statsR1))));
+figure, imshow(maskR1);
+statsR2 = cell2mat(struct2cell(regionprops(maskR2,'Area')));
+maskR2 = bwareaopen(maskR2,round(0.1*(mean(statsR2)-std(statsR2))));
+figure, imshow(maskR2);
+%% Calcolo convexhull dei riflessi: controllare se è necessario fare sta cosa
 for k=1:5
     switch(k)
         case 1
@@ -399,101 +418,41 @@ for k=1:5
             maskR2I = maskI;
     end   
 end
-%% Calcolo Convexhull maschere
+%% Calcolo Convexhull tessere singole
+% for i=1:size(obj_chess,1)
+%     for j=1:size(obj_chess(i).chess,2) %Inew = I.*repmat(M,[1,1,3]);
+%         cut_x = obj_chess(i).bbox_x(j,:);
+%         cut_y = obj_chess(i).bbox_y(j,:); 
+%         if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
+%             mask = maskL2I;
+%         end
+%         if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Primary'))
+%             mask = maskR1I;
+%         end
+%         if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Primary'))
+%             mask = maskL1I;
+%         end
+%         if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
+%             mask = maskR2I;
+%         end
+%         if(strcmp(obj_chess(i).chess(j).position,'Center'))
+%             mask = maskCI;
+%         end
+%         obj_chess(i).chess(j).ch_mask = false(size(fuse,1),size(fuse,2));      
+%         obj_chess(i).chess(j).ch_mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)) = mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)); %% TAGLIARE IN OBLIGUO unsando le maskere trovate durante la segmentazione dei colori
+%         figure, imshowpair(obj_chess(i).chess(j).ch_mask,rgb2gray(I),'falsecolor');
+%     end
+% end
 for i=1:size(obj_chess,1)
-    for j=1:size(obj_chess(i).chess,2) %Inew = I.*repmat(M,[1,1,3]);
+    for j=1:size(obj_chess(i).chess,2)
         cut_x = obj_chess(i).bbox_x(j,:);
         cut_y = obj_chess(i).bbox_y(j,:); 
-        if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
-            mask = maskL2I;
-        end
-        if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Primary'))
-            mask = maskR1I;
-        end
-        if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Primary'))
-            mask = maskL1I;
-        end
-        if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
-            mask = maskR2I;
-        end
-        if(strcmp(obj_chess(i).chess(j).position,'Center'))
-            mask = maskCI;
-        end
-        obj_chess(i).chess(j).ch_mask = false(size(fuse,1),size(fuse,2));      
-        obj_chess(i).chess(j).ch_mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)) = mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)); %% TAGLIARE IN OBLIGUO unsando le maskere trovate durante la segmentazione dei colori
+        obj_chess(i).chess(j).ch_mask = false(size(fuse,1),size(fuse,2));
+        mask = imdilate(bwconvhull(obj_chess(i).chess(j).mask),strel('square',3));
+        obj_chess(i).chess(j).ch_mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)) = mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2));     
         figure, imshowpair(obj_chess(i).chess(j).ch_mask,rgb2gray(I),'falsecolor');
     end
 end
-
-% for k=1:5
-%     switch(k)
-%         case 1
-%             mask = maskC;
-%         case 2
-%             mask = maskL1;
-%         case 3
-%             mask = maskL2;
-%         case 4
-%             mask = maskR1;
-%         case 5
-%             mask = maskR2;
-%     end
-%     idx = find(mask == 1);
-%     [idx,idy]=ind2sub(size(mask),idx);
-%     j = boundary(idx,idy,0.2); % Parametro
-%     mask = poly2mask(idy(j),idx(j), size(mask,1), size(mask,2));
-%     white = imopen(logical(BW),strel('square',5));
-%     black = imopen(dual_BW & ~col_BW & ~inv_BW,strel('square',5));
-%     black2 = imdilate(black,strel('square',15));
-%     black2 = bwareaopen(black2, 4000); % Parametro
-%     black = black & black2;
-%     masked = im2double(I);
-%     masked(repmat(black,1,1,3)) = 0;
-%     masked(repmat(logical(col_BW),1,1,3)) = 0;  
-%     masked(repmat(white,1,1,3)) = 255;
-%     masked = (masked + im2double(colors_fuse)).*repmat(mask,1,1,3);    
-%     for i=1:size(masked,1)
-%         for j=1:size(masked,2)
-%             c = masked(i,j,:);        
-%             if(sum(c) == 0 || sum(c) == 3)
-%                 continue;
-%             end
-% %             isWhiteORblack = (abs(c(:,:,1)-c(:,:,2)) + abs(c(:,:,1)-c(:,:,3)) + abs(c(:,:,2)-c(:,:,3))) < 0.4;
-% %             if(isWhiteORblack)
-% %                 white = reshape([1 1 1],1,1,3); 
-% %                 black = reshape([0 0 0],1,1,3); 
-% %                 colors = [white, black];
-% %             else
-%                 colors = getColors(i,j,obj_chess,10,c);
-% %             end           
-%             v = zeros(1,size(colors,2));
-%             for l=1:size(v,2)
-%                 dist = colors(:,l,:)-c;
-%                 dist = [dist(1,1,2) dist(1,1,1) dist(1,1,3)];
-%                 v(l) = norm(dist);
-%             end
-%             idx = find(v==min(v));
-%             c = colors(:,max(idx),:);
-%             if(max(c)>0)
-%                 c = c./max(c);
-%             end
-%             masked(i,j,:) = c;
-%         end
-%     end
-%     
-%     masked(:,:,1) = imclose(bwareaopen(masked(:,:,1),300),strel('square',10));
-%     masked(:,:,2) = imclose(bwareaopen(masked(:,:,2),300),strel('square',10));
-%     masked(:,:,3) = imclose(bwareaopen(masked(:,:,3),300),strel('square',10));
-%     masked(:,:,1) = imopen(bwareaopen(masked(:,:,1),300),strel('square',10));
-%     masked(:,:,2) = imopen(bwareaopen(masked(:,:,2),300),strel('square',10));
-%     masked(:,:,3) = imopen(bwareaopen(masked(:,:,3),300),strel('square',10));
-%     [edge_magnitude, edge_orientation, Jx, Jy, Jxy] = coloredges(masked);
-%     edge_magnitude = bwareaopen(edge_magnitude>0.4,20);
-%     edge_magnitude = filledgegaps(edge_magnitude,10)+edge(mask); % Capire se lasciare
-%     [rj, cj, re, ce] = findendsjunctions(edge_magnitude, 1);
-%     figure, imshow(masked);
-%     pause
-% end
 %% Full Mask
 FullMask = maskCI+maskL1I+maskL2I+maskR1I+maskR2I;
 BlurredMask = imgaussfilt(FullMask,10);
@@ -566,18 +525,60 @@ plot(right_fitresult,'r');
 plot(mid_fitresult, 'y');
 legend('left axis', 'right axis', 'center axis');
 %% Corner
-CL2 = imerode(maskL2I,strel('square',25)) & ~maskL2;
-CR2 = imerode(maskR2I,strel('square',40)) & ~maskR2;
-CL1 = maskL1I & ~maskL1;
-CR1 = maskR1I & ~maskR1;
-CCM = maskCI & ~maskC;
-CL2 = CR2;
-CL2v = bwareaopen(imfilter(CL2,[-1 0 1]),100) | bwareaopen(imfilter(CL2,[1 0 -1]),100);
-CL2h = getHImage('Left','Secondary',obj_chess, order, label, size(CL2));
-CL2h = imdilate(CL2h,strel('disk',5));
+% Left Secondary Reflection
+idl = find(strcmp(label(3,:),'Left') & strcmp(label(4,:),'Secondary'));
+id_obj_chess = order(1,idl);
+id_chess = order(2,idl);
+gapL2 = line2image(obj_chess(id_obj_chess(1)).chess(id_chess(1)).v_lines{1},size(maskC));
+gapL2 = gapL2 | line2image(obj_chess(id_obj_chess(end)).chess(id_chess(end)).v_lines{end},size(maskC));
+CL2 = imerode(maskL2I,strel('rectangle',[30,20])) & ~maskL2 & ~imdilate(gapL2,strel('disk',12)); %CL2 = imerode(maskL2I,strel('square',25)) & ~maskL2;
+
+% Right Secondary Reflection
+idl = find(strcmp(label(3,:),'Right') & strcmp(label(4,:),'Secondary'));
+id_obj_chess = order(1,idl);
+id_chess = order(2,idl);
+gapR2 = line2image(obj_chess(id_obj_chess(1)).chess(id_chess(1)).v_lines{1},size(maskC));
+gapR2 = gapR2 | line2image(obj_chess(id_obj_chess(end)).chess(id_chess(end)).v_lines{end},size(maskC));
+CR2 = imerode(maskR2I,strel('rectangle',[30,20])) & ~maskR2 & ~imdilate(gapR2,strel('disk',12)); %CR2 = imerode(maskR2I,strel('square',40)) & ~maskR2;
+
+% Left Primary Reflection
+idl = find(strcmp(label(3,:),'Left') & strcmp(label(4,:),'Primary'));
+id_obj_chess = order(1,idl);
+id_chess = order(2,idl);
+gapL1 = line2image(obj_chess(id_obj_chess(1)).chess(id_chess(1)).v_lines{1},size(maskC));
+gapL1 = gapL1 | line2image(obj_chess(id_obj_chess(end)).chess(id_chess(end)).v_lines{end},size(maskC));
+CL1 = imerode(maskL1I,strel('rectangle',[30,20])) & ~maskL1 & ~imdilate(gapL1,strel('disk',12)); 
+
+% Right Primary Reflection
+idl = find(strcmp(label(3,:),'Right') & strcmp(label(4,:),'Primary'));
+id_obj_chess = order(1,idl);
+id_chess = order(2,idl);
+gapR1 = line2image(obj_chess(id_obj_chess(1)).chess(id_chess(1)).v_lines{1},size(maskC));
+gapR1 = gapR1 | line2image(obj_chess(id_obj_chess(end)).chess(id_chess(end)).v_lines{end},size(maskC));
+CR1 = imerode(maskR1I,strel('rectangle',[30,20])) & ~maskR1 & ~imdilate(gapR1,strel('disk',12));
+
+% Center Real Reflection
+idl = find(strcmp(label(3,:),'Center') & strcmp(label(4,:),'Real'));
+id_obj_chess = order(1,idl);
+id_chess = order(2,idl);
+gapCR = line2image(obj_chess(id_obj_chess(1)).chess(id_chess(1)).v_lines{1},size(maskC));
+gapCR = gapCR | line2image(obj_chess(id_obj_chess(end)).chess(id_chess(end)).v_lines{end},size(maskC));
+CCR = imerode(maskCI,strel('rectangle',[30,10])) & ~maskC & ~imdilate(gapCR,strel('disk',12));
+
+CL2 = CCR;
+CL2 = imclose(CL2,strel('square',15));
+CL2v = imfilter(CL2,[-1 0 1]) | imfilter(CL2,[1 0 -1]);
+
+[CL2hh, CL2h] = getHImage('Center','Real',obj_chess, order, label, size(CL2), maskCI);
+CL2h = imdilate(CL2h,strel('disk',10)).*maskCI;
+stats = cell2mat(struct2cell(regionprops(CL2h,'Area')));
+CL2h = imopen(bwareaopen(CL2h,round(0.1*(mean(stats)-std(stats)))),strel('disk',10));
+
 CL2v = CL2v - CL2h;
 CL2v(CL2v<0) = 0;
-CL2v = bwareaopen(CL2v,100);
+stats = cell2mat(struct2cell(regionprops(bwconncomp(CL2v,8),'Area')));
+CL2v = bwareaopen(CL2v,round(0.1*(mean(stats)-std(stats))));
+
 props = regionprops(CL2v,'Centroid');
 props = reshape(cell2mat(struct2cell(props)),2,size(props,1));
 props = [1:size(props,2);props];
@@ -585,21 +586,187 @@ props = [1:size(props,2);props];
 props(3,:) = props(3, props(1,:));
 CC = bwconncomp(CL2v,8);
 line1 = [CC.PixelIdxList{props(1,1)};CC.PixelIdxList{props(1,2)};CC.PixelIdxList{props(1,3)};CC.PixelIdxList{props(1,4)};CC.PixelIdxList{props(1,5)};CC.PixelIdxList{props(1,6)};CC.PixelIdxList{props(1,7)};CC.PixelIdxList{props(1,8)};CC.PixelIdxList{props(1,9)};CC.PixelIdxList{props(1,10)}];
+[line1y,line1x] = ind2sub(size(CL2v),line1); 
+[line1_fitresult, ~] = createLineInv(line1y, line1x);
+coeffs = coeffvalues(line1_fitresult);
+dim = size(CL2v);
+x = 1:0.001:size(CL2v,1);
+y = floor(polyval(coeffs,x));
+x = floor(x);
+x(y<1 | y>dim(2)) = [];
+y(y<1 | y>dim(2)) = [];
+image_line = false(dim);
+for j = 1:size(x,2)
+    image_line(x(j),y(j)) = 1;
+end
+imshow(I); hold on;
+plot(y,x,'r');
 line2 = [CC.PixelIdxList{props(1,11)};CC.PixelIdxList{props(1,12)};CC.PixelIdxList{props(1,13)};CC.PixelIdxList{props(1,14)};CC.PixelIdxList{props(1,15)};CC.PixelIdxList{props(1,16)};CC.PixelIdxList{props(1,17)};CC.PixelIdxList{props(1,18)};CC.PixelIdxList{props(1,19)};CC.PixelIdxList{props(1,20)}];
+[line1y,line1x] = ind2sub(size(CL2v),line2); 
+[line1_fitresult, ~] = createLineInv(line1y, line1x);
+coeffs = coeffvalues(line1_fitresult);
+x = 1:0.001:size(CL2v,1);
+y = floor(polyval(coeffs,x));
+x = floor(x);
+x(y<1 | y>dim(2)) = [];
+y(y<1 | y>dim(2)) = [];
+for j = 1:size(x,2)
+    image_line(x(j),y(j)) = 1;
+end
+plot(y,x,'r');
 line3 = [CC.PixelIdxList{props(1,21)};CC.PixelIdxList{props(1,22)};CC.PixelIdxList{props(1,23)};CC.PixelIdxList{props(1,24)};CC.PixelIdxList{props(1,25)};CC.PixelIdxList{props(1,26)};CC.PixelIdxList{props(1,27)};CC.PixelIdxList{props(1,28)};CC.PixelIdxList{props(1,29)};CC.PixelIdxList{props(1,30)}];
-line4 = [CC.PixelIdxList{props(1,31)};CC.PixelIdxList{props(1,32)};CC.PixelIdxList{props(1,33)};CC.PixelIdxList{props(1,34)};CC.PixelIdxList{props(1,35)};CC.PixelIdxList{props(1,36)};CC.PixelIdxList{props(1,37)};CC.PixelIdxList{props(1,38)};CC.PixelIdxList{props(1,39)}];
+[line1y,line1x] = ind2sub(size(CL2v),line3); 
+[line1_fitresult, ~] = createLineInv(line1y, line1x);
+coeffs = coeffvalues(line1_fitresult);
+x = 1:0.001:size(CL2v,1);
+y = floor(polyval(coeffs,x));
+x = floor(x);
+x(y<1 | y>dim(2)) = [];
+y(y<1 | y>dim(2)) = [];
+for j = 1:size(x,2)
+    image_line(x(j),y(j)) = 1;
+end
+hold on;
+plot(y,x,'r');
+line4 = [CC.PixelIdxList{props(1,31)};CC.PixelIdxList{props(1,32)};CC.PixelIdxList{props(1,33)};CC.PixelIdxList{props(1,34)};CC.PixelIdxList{props(1,35)};CC.PixelIdxList{props(1,36)};CC.PixelIdxList{props(1,37)};CC.PixelIdxList{props(1,38)};CC.PixelIdxList{props(1,39)}; CC.PixelIdxList{props(1,40)}];
 [line1y,line1x] = ind2sub(size(CL2v),line4); 
 [line1_fitresult, ~] = createLineInv(line1y, line1x);
 coeffs = coeffvalues(line1_fitresult);
-x = 1:size(CL2v,1);
-y = round(polyval(coeffs,x));
-imshow(I); hold on;
-plot(y,x,'r'); 
+x = 1:0.001:size(CL2v,1);
+y = floor(polyval(coeffs,x));
+x = floor(x);
+x(y<1 | y>dim(2)) = [];
+y(y<1 | y>dim(2)) = [];
+for j = 1:size(x,2)
+    image_line(x(j),y(j)) = 1;
+end
+hold on;
+plot(y,x,'r');
 
-tmp = CL2v;
+CL2v2 = imdilate(image_line,strel('disk',15));
+gray = im2double(rgb2gray(I));
+sss = gray.*CL2v2.*imerode(maskL2I,strel('rectangle',[50,2])).*imdilate(CL2h,strel('disk',10));
+sss = sss.*bwareaopen(sss>0,10);
+CC = bwconncomp(sss>0,8);
+sss_image = zeros(size(sss,1),size(sss,2),3); P = [];
+for i=1:CC.NumObjects
+    [cutR,cutC] = ind2sub(size(CL2v),CC.PixelIdxList{i}); 
+    tmp = sss(min(cutR):max(cutR),min(cutC):max(cutC));
+    tt = 0.3*size(tmp,1)*size(tmp,2);
+    condition = true;
+    th = 0.9; store = cell(2,1);
+    while(condition)
+        bw_tmp = im2bw(tmp,th);
+        th = th-0.01;
+        CC_tmp = bwconncomp(bw_tmp,8);        
+        if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)
+            condition = false;
+            [blob1y,blob1x] = ind2sub(size(tmp),store{1});
+            [blob2y,blob2x] = ind2sub(size(tmp),store{2});
+            D = zeros(5,size(blob1y,1)*(size(blob2y,1)-1)); idist = 1;
+            for k=1:size(blob1y)
+                for j=1:size(blob2y)
+                    D(1,idist) = blob1x(k);
+                    D(2,idist) = blob1y(k);
+                    D(3,idist) = blob2x(j);
+                    D(4,idist) = blob2y(j);
+                    D(5,idist) = pdist([blob1x(k) blob1y(k); blob2x(j) blob2y(j)],'euclidean');
+                    idist = idist+1;
+                end
+            end
+        end
+        if(CC_tmp.NumObjects == 2)
+           store(1) = CC_tmp.PixelIdxList(1);
+           store(2) = CC_tmp.PixelIdxList(2);          
+        end 
+    end
+    [D(5,:), idd] = sort(D(5,:));
+    D(1,:) = D(1,idd);
+    D(2,:) = D(2,idd);
+    D(3,:) = D(3,idd);
+    D(4,:) = D(4,idd);
+    XX = round(mean([D(1,1:5),D(3,1:5)]));
+    YY = round(mean([D(2,1:5),D(4,1:5)]));
+    figure, imshow(bw_tmp), hold on, scatter(XX,YY);
+    sss_image(min(cutR):max(cutR),min(cutC):max(cutC),1) = bw_tmp;
+    sss_image(min(cutR)+YY,min(cutC)+XX,2) = 1;
+    P = [P;min(cutR)+YY,min(cutC)+XX];
+end
+figure, imshow(I); hold on; scatter(P(:,2),P(:,1))
+C = regionprops(sss_image,'Extrema');
+imshow(sss_image);
+hold on
+CC_e = 1.0e+03 *[
+   
+    4.3775    0.1245
+    4.3805    0.1245
+    4.3955    0.1465
+    4.3955    0.1625
+    4.3865    0.1635
+    4.3825    0.1635
+    4.3645    0.1415
+    4.3645    0.1265];
+scatter(CC_e(:,1),CC_e(:,2));
+hist = imhist(sss(CC.PixelIdxList{1}));
+hist = [1:256;hist'];
+
+
+T = adaptthresh(sss,0,'ForegroundPolarity','bright');
+BW = imbinarize(sss,T);
+
+
+CL2h2 = imfilter(CL2,[-1 0 1]') | imfilter(CL2,[1 0 -1]');
+CL2v2 = imdilate(image_line,strel('disk',15));
+CL2h2 = CL2 - CL2v2 - CL2v;
+CL2h2(CL2h2<0) = 0;
+CL2h2 = bwareaopen(CL2h2,20);
+CL2h2 = imopen(CL2h2,strel('disk',5));
+
+props = regionprops(CL2h2,'Centroid');
+props = reshape(cell2mat(struct2cell(props)),2,size(props,1));
+props = [1:size(props,2);props];
+[props(3,:), props(1,:)] = sort(props(3,:));
+props(2,:) = props(2, props(1,:));
+CC = bwconncomp(CL2h2,8);
+
+line1 = [CC.PixelIdxList{props(1,1)};CC.PixelIdxList{props(1,2)};CC.PixelIdxList{props(1,3)};CC.PixelIdxList{props(1,4)}];
+[line1y,line1x] = ind2sub(size(CL2v),line1); 
+[line1_fitresult, ~] = create2poly(line1x, line1y);
+coeffs = coeffvalues(line1_fitresult);
+dim = size(CL2v);
+x = 1:0.001:size(CL2v,1);
+y = polyval(coeffs,x);
+plot(x,y,'r');
+line2 = [CC.PixelIdxList{props(1,9)};CC.PixelIdxList{props(1,10)};CC.PixelIdxList{props(1,11)};CC.PixelIdxList{props(1,12)};CC.PixelIdxList{props(1,13)};CC.PixelIdxList{props(1,14)};CC.PixelIdxList{props(1,15)};CC.PixelIdxList{props(1,16)}];
+[line1y,line1x] = ind2sub(size(CL2v),line2); 
+[line1_fitresult, ~] = createLineInv(line1y, line1x);
+coeffs = coeffvalues(line1_fitresult);
+x = 1:0.001:size(CL2v,1);
+y = polyval(coeffs,x);
+plot(y,x,'r');
+line3 = [CC.PixelIdxList{props(1,17)};CC.PixelIdxList{props(1,18)};CC.PixelIdxList{props(1,19)};CC.PixelIdxList{props(1,20)};CC.PixelIdxList{props(1,21)};CC.PixelIdxList{props(1,22)};CC.PixelIdxList{props(1,23)};CC.PixelIdxList{props(1,24)}];
+[line1y,line1x] = ind2sub(size(CL2v),line3); 
+[line1_fitresult, ~] = createLineInv(line1y, line1x);
+coeffs = coeffvalues(line1_fitresult);
+x = 1:0.001:size(CL2v,1);
+y = polyval(coeffs,x);
+hold on;
+plot(y,x,'r');
+line4 = [CC.PixelIdxList{props(1,25)};CC.PixelIdxList{props(1,26)};CC.PixelIdxList{props(1,27)};CC.PixelIdxList{props(1,28)};CC.PixelIdxList{props(1,29)};CC.PixelIdxList{props(1,30)};CC.PixelIdxList{props(1,31)};CC.PixelIdxList{props(1,32)}];
+[line1y,line1x] = ind2sub(size(CL2v),line4); 
+[line1_fitresult, ~] = createLineInv(line1y, line1x);
+coeffs = coeffvalues(line1_fitresult);
+x = 1:0.001:size(CL2v,1);
+y = polyval(coeffs,x);
+hold on;
+plot(y,x,'r');
+
+
+tmp = CL2h2;
 for i=1:10
     tmp(CC.PixelIdxList{props(1,i)}) = 0;
     imshow(tmp)
+    i
     pause
 end
 

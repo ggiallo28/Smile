@@ -262,9 +262,33 @@ for i = 1:size(x,1)
             [fitresult, ~] = createLine([props(1).Centroid(2),props(2).Centroid(2)],[props(1).Centroid(1),props(2).Centroid(1)]);
             Xtop = fitresult(y(i,1));
             Xbot = fitresult(y(i,2));
-            color_square =  BW&mask;           
-            color_square(y(i,1):y(i,1)+3,round(Xtop-len/2):round(Xtop+len/2)) = 255;
-            color_square(y(i,2)-3:y(i,2),round(Xbot-len/2):round(Xbot+len/2)) = 255;
+            color_square =  BW&mask;  
+            % Se abbiamo due square il rettangolo sopra e sotto manca, lo
+            % simuliamo replicando i contorni inferiore e superiore
+            color_square_edge = imfilter(color_square,[-1 0 1]') | imfilter(color_square,[1 0 -1]');
+            color_square_edge = bwareaopen(color_square_edge,round(0.9*len));
+            CC_color_square_edge = bwconncomp(color_square_edge,8);
+            centroid_color_square_edge = reshape(cell2mat(struct2cell(regionprops(color_square_edge,'Centroid'))),2,CC_color_square_edge.NumObjects);
+            edge_to_top = centroid_color_square_edge(2,:)-y(i,1);
+            edge_to_bot = y(i,2)-centroid_color_square_edge(2,:);
+            [~, idx_top] = sort(edge_to_top);
+            [~, idx_bot] = sort(edge_to_bot);
+            % shiftare gli indici, y è troppo in alto quindi viene
+            % aggiustato usando il min/max valore del edge
+            % Successivamente vengono settati gli indici shiftati a bianco 
+            top_edge = CC_color_square_edge.PixelIdxList{idx_top(1)};
+            [y_top,x_top] = ind2sub(size(color_square),top_edge);
+            x_top = x_top + floor(Xtop - mean(x_top));
+            y_top = y_top - min(y_top)+y(i,1);
+            top_edge = sub2ind(size(color_square),y_top,x_top);
+            color_square(top_edge) = 1;          
+
+            bot_edge = CC_color_square_edge.PixelIdxList{idx_bot(1)};
+            [y_bot,x_bot] = ind2sub(size(color_square),bot_edge);            
+            x_bot = x_bot + floor(Xbot - mean(x_bot));
+            y_bot = y_bot - max(y_bot) + y(i,2);
+            top_edge = sub2ind(size(color_square),y_bot,x_bot);
+            color_square(top_edge) = 1;
         end
     end
     [color_square, obj.chess(i)] = fitSquare(color_square,x(i,1),x(i,2),obj.chess(i)); 
