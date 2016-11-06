@@ -530,26 +530,26 @@ verticalCell = cell(5,20);
 for i=1:5 % Non sei indipendente dal numero di riflessi
     switch (i)
         case 1
-            % Left Secondary Reflection
-            idl = find(strcmp(label(3,:),'Left') & strcmp(label(4,:),'Secondary'));
-            grid_pos = 'Left';
-            grid_typ = 'Secondary';
-            maskI = maskL2I;
-            mask = maskL2;
+            % Center Real Reflection
+            idl = find(strcmp(label(3,:),'Center') & strcmp(label(4,:),'Real'));
+            grid_pos = 'Center';
+            grid_typ = 'Real';
+            maskI = maskCI;
+            mask = maskC;
         case 2
-            % Right Secondary Reflection
-            idl = find(strcmp(label(3,:),'Right') & strcmp(label(4,:),'Secondary'));
-            grid_pos = 'Right';
-            grid_typ = 'Secondary';
-            maskI = maskR2I;
-            mask = maskR2;
-        case 3
             % Left Primary Reflection
             idl = find(strcmp(label(3,:),'Left') & strcmp(label(4,:),'Primary'));
             grid_pos = 'Left';
             grid_typ = 'Primary';
             maskI = maskL1I;
             mask = maskL1;
+        case 3
+            % Left Secondary Reflection
+            idl = find(strcmp(label(3,:),'Left') & strcmp(label(4,:),'Secondary'));
+            grid_pos = 'Left';
+            grid_typ = 'Secondary';
+            maskI = maskL2I;
+            mask = maskL2;
         case 4
             % Right Primary Reflection
             idl = find(strcmp(label(3,:),'Right') & strcmp(label(4,:),'Primary'));
@@ -558,12 +558,12 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
             maskI = maskR1I;
             mask = maskR1;
         case 5
-            % Center Real Reflection
-            idl = find(strcmp(label(3,:),'Center') & strcmp(label(4,:),'Real'));
-            grid_pos = 'Center';
-            grid_typ = 'Real';
-            maskI = maskCI;
-            mask = maskC;
+            % Right Secondary Reflection
+            idl = find(strcmp(label(3,:),'Right') & strcmp(label(4,:),'Secondary'));
+            grid_pos = 'Right';
+            grid_typ = 'Secondary';
+            maskI = maskR2I;
+            mask = maskR2;
     end   
     id_obj_chess = order(1,idl);
     id_chess = order(2,idl);
@@ -730,8 +730,8 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
     end
     figure, imshow(I), hold on, scatter(P(:,2),P(:,1));
     [y_rj_matrix, x_cj_matrix] = orderPoints(P, horizontalCell(i,:), verticalCell(i,:), maskI);
-    pointsArray.x_points{k} = x_cj_matrix;
-    pointsArray.y_points{k} = y_rj_matrix;
+    pointsArray.x_points{i} = x_cj_matrix;
+    pointsArray.y_points{i} = y_rj_matrix;
     figure, imshow(I), hold on, scatter(x_cj_matrix(:),y_rj_matrix(:));
 end
 
@@ -794,257 +794,257 @@ end
 % end
 % hold on;
 % plot(y,x,'r');
-
-CL2v2 = imdilate(image_line,strel('disk',15));
-gray = im2double(rgb2gray(I));
-sss = gray.*CL2v2.*imerode(maskL2I,strel('rectangle',[50,2])).*imdilate(CL2h,strel('disk',10));
-sss = sss.*bwareaopen(sss>0,10);
-CC = bwconncomp(sss>0,8);
-sss_image = zeros(size(sss,1),size(sss,2),3); P = [];
-for i=1:CC.NumObjects
-    [cutR,cutC] = ind2sub(size(CL2v),CC.PixelIdxList{i}); 
-    tmp = sss(min(cutR):max(cutR),min(cutC):max(cutC));
-    tt = 0.3*size(tmp,1)*size(tmp,2);
-    condition = true;
-    th = 0.9; store = cell(2,1);
-    while(condition)
-        bw_tmp = im2bw(tmp,th);
-        th = th-0.01;
-        CC_tmp = bwconncomp(bw_tmp,8);        
-        if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)
-            condition = false;
-            [blob1y,blob1x] = ind2sub(size(tmp),store{1});
-            [blob2y,blob2x] = ind2sub(size(tmp),store{2});
-            D = zeros(5,size(blob1y,1)*(size(blob2y,1)-1)); idist = 1;
-            for k=1:size(blob1y)
-                for j=1:size(blob2y)
-                    D(1,idist) = blob1x(k);
-                    D(2,idist) = blob1y(k);
-                    D(3,idist) = blob2x(j);
-                    D(4,idist) = blob2y(j);
-                    D(5,idist) = pdist([blob1x(k) blob1y(k); blob2x(j) blob2y(j)],'euclidean');
-                    idist = idist+1;
-                end
-            end
-        end
-        if(CC_tmp.NumObjects == 2)
-           store(1) = CC_tmp.PixelIdxList(1);
-           store(2) = CC_tmp.PixelIdxList(2);          
-        end 
-    end
-    [D(5,:), idd] = sort(D(5,:));
-    D(1,:) = D(1,idd);
-    D(2,:) = D(2,idd);
-    D(3,:) = D(3,idd);
-    D(4,:) = D(4,idd);
-    XX = round(mean([D(1,1:5),D(3,1:5)]));
-    YY = round(mean([D(2,1:5),D(4,1:5)]));
-    figure, imshow(bw_tmp), hold on, scatter(XX,YY);
-    sss_image(min(cutR):max(cutR),min(cutC):max(cutC),1) = bw_tmp;
-    sss_image(min(cutR)+YY,min(cutC)+XX,2) = 1;
-    P = [P;min(cutR)+YY,min(cutC)+XX];
-         pointsArray.x_points{k} = x_cj_matrix;
-     pointsArray.y_points{k} = y_rj_matrix;
-end
-
-figure, imshow(I); hold on; scatter(P(:,2),P(:,1))
-C = regionprops(sss_image,'Extrema');
-imshow(sss_image);
-hold on
-CC_e = 1.0e+03 *[
-   
-    4.3775    0.1245
-    4.3805    0.1245
-    4.3955    0.1465
-    4.3955    0.1625
-    4.3865    0.1635
-    4.3825    0.1635
-    4.3645    0.1415
-    4.3645    0.1265];
-scatter(CC_e(:,1),CC_e(:,2));
-hist = imhist(sss(CC.PixelIdxList{1}));
-hist = [1:256;hist'];
-
-
-T = adaptthresh(sss,0,'ForegroundPolarity','bright');
-BW = imbinarize(sss,T);
-
-
-CL2h2 = imfilter(CL2,[-1 0 1]') | imfilter(CL2,[1 0 -1]');
-CL2v2 = imdilate(image_line,strel('disk',15));
-CL2h2 = CL2 - CL2v2 - CL2v;
-CL2h2(CL2h2<0) = 0;
-CL2h2 = bwareaopen(CL2h2,20);
-CL2h2 = imopen(CL2h2,strel('disk',5));
-
-props = regionprops(CL2h2,'Centroid');
-props = reshape(cell2mat(struct2cell(props)),2,size(props,1));
-props = [1:size(props,2);props];
-[props(3,:), props(1,:)] = sort(props(3,:));
-props(2,:) = props(2, props(1,:));
-CC = bwconncomp(CL2h2,8);
-
-line1 = [CC.PixelIdxList{props(1,1)};CC.PixelIdxList{props(1,2)};CC.PixelIdxList{props(1,3)};CC.PixelIdxList{props(1,4)}];
-[line1y,line1x] = ind2sub(size(CL2v),line1); 
-[line1_fitresult, ~] = create2poly(line1x, line1y);
-coeffs = coeffvalues(line1_fitresult);
-dim = size(CL2v);
-x = 1:0.001:size(CL2v,1);
-y = polyval(coeffs,x);
-plot(x,y,'r');
-line2 = [CC.PixelIdxList{props(1,9)};CC.PixelIdxList{props(1,10)};CC.PixelIdxList{props(1,11)};CC.PixelIdxList{props(1,12)};CC.PixelIdxList{props(1,13)};CC.PixelIdxList{props(1,14)};CC.PixelIdxList{props(1,15)};CC.PixelIdxList{props(1,16)}];
-[line1y,line1x] = ind2sub(size(CL2v),line2); 
-[line1_fitresult, ~] = createLineInv(line1y, line1x);
-coeffs = coeffvalues(line1_fitresult);
-x = 1:0.001:size(CL2v,1);
-y = polyval(coeffs,x);
-plot(y,x,'r');
-line3 = [CC.PixelIdxList{props(1,17)};CC.PixelIdxList{props(1,18)};CC.PixelIdxList{props(1,19)};CC.PixelIdxList{props(1,20)};CC.PixelIdxList{props(1,21)};CC.PixelIdxList{props(1,22)};CC.PixelIdxList{props(1,23)};CC.PixelIdxList{props(1,24)}];
-[line1y,line1x] = ind2sub(size(CL2v),line3); 
-[line1_fitresult, ~] = createLineInv(line1y, line1x);
-coeffs = coeffvalues(line1_fitresult);
-x = 1:0.001:size(CL2v,1);
-y = polyval(coeffs,x);
-hold on;
-plot(y,x,'r');
-line4 = [CC.PixelIdxList{props(1,25)};CC.PixelIdxList{props(1,26)};CC.PixelIdxList{props(1,27)};CC.PixelIdxList{props(1,28)};CC.PixelIdxList{props(1,29)};CC.PixelIdxList{props(1,30)};CC.PixelIdxList{props(1,31)};CC.PixelIdxList{props(1,32)}];
-[line1y,line1x] = ind2sub(size(CL2v),line4); 
-[line1_fitresult, ~] = createLineInv(line1y, line1x);
-coeffs = coeffvalues(line1_fitresult);
-x = 1:0.001:size(CL2v,1);
-y = polyval(coeffs,x);
-hold on;
-plot(y,x,'r');
-
-
-tmp = CL2h2;
-for i=1:10
-    tmp(CC.PixelIdxList{props(1,i)}) = 0;
-    imshow(tmp)
-    i
-    pause
-end
-
-
-%% Corner
-cymk = rgb2cmyk(I);
-Cyano = im2double(cymk(:,:,1));
-Magenta = im2double(cymk(:,:,2));
-Yellow = im2double(cymk(:,:,3));
-TheColors = Cyano+Magenta+Yellow;
-Key = im2double(cymk(:,:,4));
-
-KEY = (1-Key);
-ORIG = rgb2gray(im2double(O));
-[color_filtered, color_filtered_x, color_filtered_y] = absimfilter(TheColors+left_center_axis+right_center_axis+mid_center_axis,fspecial('prewit'));
-[key_filtered, key_filtered_x, key_filtered_y] = absimfilter(KEY,fspecial('prewit'));
-[orig_filtered, orig_filtered_x, orig_filtered_y] = absimfilter(ORIG,fspecial('prewit'));
 % 
-% [eeee, eeeee, eeeeee] = absimfilter(L,fspecial('sobel'));
-% bw = im2bw(eeee,0.3*graythresh(eeee.*FullMask));
-% bw = imdilate(bw,strel('square',2));
-% bw = imerode(bw,strel('square',5));
-
-img_filtered = (key_filtered+orig_filtered+color_filtered)./3;
-
-% ORIG_Kywahara = Kuwahara(ORIG,(4*1+1));
-% ORIG_edge = edge(ORIG_Kywahara,'canny').*FullMask;
-% ORIG_edge = imdilate(ORIG_edge,strel('square',4));
-% ORIG_edge = imopen(ORIG_edge,strel('square',4));
-% ORIG_edge = bwareaopen(ORIG_edge, 4000); % Parametro
-% ORIG_edge = imerode(ORIG_edge,strel('square',4));
-% ORIG_edge = bwareaopen(ORIG_edge, 4000); % Parametro
-% ORIG_edge = imclose(ORIG_edge,strel('square',4));
-% img_filtered = ORIG_edge.*FullMask;
+% CL2v2 = imdilate(image_line,strel('disk',15));
+% gray = im2double(rgb2gray(I));
+% sss = gray.*CL2v2.*imerode(maskL2I,strel('rectangle',[50,2])).*imdilate(CL2h,strel('disk',10));
+% sss = sss.*bwareaopen(sss>0,10);
+% CC = bwconncomp(sss>0,8);
+% sss_image = zeros(size(sss,1),size(sss,2),3); P = [];
+% for i=1:CC.NumObjects
+%     [cutR,cutC] = ind2sub(size(CL2v),CC.PixelIdxList{i}); 
+%     tmp = sss(min(cutR):max(cutR),min(cutC):max(cutC));
+%     tt = 0.3*size(tmp,1)*size(tmp,2);
+%     condition = true;
+%     th = 0.9; store = cell(2,1);
+%     while(condition)
+%         bw_tmp = im2bw(tmp,th);
+%         th = th-0.01;
+%         CC_tmp = bwconncomp(bw_tmp,8);        
+%         if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)
+%             condition = false;
+%             [blob1y,blob1x] = ind2sub(size(tmp),store{1});
+%             [blob2y,blob2x] = ind2sub(size(tmp),store{2});
+%             D = zeros(5,size(blob1y,1)*(size(blob2y,1)-1)); idist = 1;
+%             for k=1:size(blob1y)
+%                 for j=1:size(blob2y)
+%                     D(1,idist) = blob1x(k);
+%                     D(2,idist) = blob1y(k);
+%                     D(3,idist) = blob2x(j);
+%                     D(4,idist) = blob2y(j);
+%                     D(5,idist) = pdist([blob1x(k) blob1y(k); blob2x(j) blob2y(j)],'euclidean');
+%                     idist = idist+1;
+%                 end
+%             end
+%         end
+%         if(CC_tmp.NumObjects == 2)
+%            store(1) = CC_tmp.PixelIdxList(1);
+%            store(2) = CC_tmp.PixelIdxList(2);          
+%         end 
+%     end
+%     [D(5,:), idd] = sort(D(5,:));
+%     D(1,:) = D(1,idd);
+%     D(2,:) = D(2,idd);
+%     D(3,:) = D(3,idd);
+%     D(4,:) = D(4,idd);
+%     XX = round(mean([D(1,1:5),D(3,1:5)]));
+%     YY = round(mean([D(2,1:5),D(4,1:5)]));
+%     figure, imshow(bw_tmp), hold on, scatter(XX,YY);
+%     sss_image(min(cutR):max(cutR),min(cutC):max(cutC),1) = bw_tmp;
+%     sss_image(min(cutR)+YY,min(cutC)+XX,2) = 1;
+%     P = [P;min(cutR)+YY,min(cutC)+XX];
+%          pointsArray.x_points{k} = x_cj_matrix;
+%      pointsArray.y_points{k} = y_rj_matrix;
+% end
 % 
-% imshow(imfilter(1-Key,fspecial('unsharp')))
-bw = im2bw(img_filtered,graythresh(img_filtered.*FullMask)); % Se si cambia la soglia qua non funge più un cazzo
-bw = imclose(bw,strel('square',5));
-bw = bwareaopen(bw, 100); % Parametro
-grid_image = false(size(bw));
-horizontalCell = cell(5,20);
-verticalCell = cell(5,20);
-pointsArray = struct();
-for k=1:5
-    switch(k)
-        case 1
-            mask = maskCI;
-        case 2
-            mask = maskL1I;
-        case 3
-            mask = maskL2I;
-        case 4
-            mask = maskR1I;
-        case 5
-            mask = maskR2I;
-    end
-    mask = imdilate(mask,strel('rectangle',[2 12]));
-    mask = imerode(mask,strel('rectangle',[14 2]));
-    bw_edge = filledgegaps(bw.*mask,1);
-    CC = bwconncomp(~bw_edge,4);
-    for i=1:size(CC.PixelIdxList,2)
-        if(size(CC.PixelIdxList{i},1)<100)
-            bw_edge(CC.PixelIdxList{i}) = 1;
-        end
-    end
-    bw_edge = filledgegaps(bw_edge,1);     
-    horizontalEdgeImage = imfilter(bw_edge, [-1 0 1]');
-    horizontalEdgeImage = bwareaopen(horizontalEdgeImage, 10); % Parametro
-    horizontalEdgeImage = filledgegaps(horizontalEdgeImage,9);
-    horizontalEdgeImage = bwareaopen(horizontalEdgeImage, 100); % Parametro
-    CCh = bwconncomp(horizontalEdgeImage,8);
-    horizontal_image = false(size(horizontalEdgeImage));
-    for i = 1:size(CCh.PixelIdxList,2)
-        [idy,idx] = ind2sub(size(I),CCh.PixelIdxList{i});  % Ma è giusta sta size? I è a 3 dimensioni    
-        [horizonta_fitresult, horiz_gof] = createCircle(idx, idy);
-        coeffs = coeffvalues(horizonta_fitresult);
-        x = 1:size(horizontalEdgeImage,2);
-        y = round(polyval(coeffs,x));
-        x(y<1 | y>size(horizontalEdgeImage,1)) = [];
-        y(y<1 | y>size(horizontalEdgeImage,1)) = [];
-        for j = 1:size(x,2)
-            horizontal_image(y(j),x(j)) = 1;
-        end
-        plot(x,y,'k'); 
-        horizontalCell{k,i} = horizonta_fitresult;
-    end
-    grid_image = grid_image | horizontal_image;
-    tmp_grid_image = horizontal_image;
-    horizontal_image = imdilate(horizontal_image,strel('disk',2));
-    verticalEdgeImage = imfilter(bw_edge, [-1 0 1]);
-    verticalEdgeImage = bwareaopen(verticalEdgeImage, 20); % Parametro
-    verticalEdgeImage = (verticalEdgeImage - horizontal_image)>0;
-    verticalEdgeImage = filledgegapsel(verticalEdgeImage,3,8);
-    verticalEdgeImage = bwareaopen(verticalEdgeImage, 100); % Parametro
-    CCv = bwconncomp(verticalEdgeImage,8);
-    vertical_image = false(size(verticalEdgeImage));
-    for i = 1:size(CCv.PixelIdxList,2)
-        [idy,idx] = ind2sub(size(I),CCv.PixelIdxList{i});
-        [vertical_fitresult, vert_gof] = createLine(idy, idx);
-        coeffs = coeffvalues(vertical_fitresult);
-        y = 1:0.01:size(verticalEdgeImage,1);
-        x = polyval(coeffs,y);
-        for j = 1:size(x,2)
-            vertical_image(round(y(j)),round(x(j))) = 1;
-        end
-        plot(x,y,'k');
-        verticalCell{k,i} = vertical_fitresult;
-    end
-    grid_image = grid_image | vertical_image;   
-%     Se la distanza tra due rette e minore di una soglia allora sono la
-%     stessa retta, riusa i punti per farne una nuova, oppure se si
-%     intersecano sull'immagine e sicuro un errore
-%     [idy,idx] = ind2sub(size(I),CCo.PixelIdxList{1}); [idy1,idx1] = ind2sub(size(I),CCo.PixelIdxList{2});
-%     [oriz_fitresult, oriz_gof] = createFit([idx;idx1], [idy;idy1]);
-%     imshow(I); hold on; plot(oriz_fitresult,'b'); 
-%     pause 
-% usare prima le rette per unire pezzi spuri di contorni e poi interpolare
-     mask = imdilate(mask,strel('rectangle',[12 12]));
-     tmp_grid_image = (vertical_image | tmp_grid_image).*mask;
-     [y_rj_matrix, x_cj_matrix] = findIntersections(horizontalCell(k,:), verticalCell(k,:), mask);
-%     [rj, cj, ~, ~] = findendsjunctions(bw_edge.*mask, 0,k); % Eventualmente fare la media con questi per rendere il tutto più "preciso"
-     scatter(x_cj_matrix(:),y_rj_matrix(:));
-end
+% figure, imshow(I); hold on; scatter(P(:,2),P(:,1))
+% C = regionprops(sss_image,'Extrema');
+% imshow(sss_image);
+% hold on
+% CC_e = 1.0e+03 *[
+%    
+%     4.3775    0.1245
+%     4.3805    0.1245
+%     4.3955    0.1465
+%     4.3955    0.1625
+%     4.3865    0.1635
+%     4.3825    0.1635
+%     4.3645    0.1415
+%     4.3645    0.1265];
+% scatter(CC_e(:,1),CC_e(:,2));
+% hist = imhist(sss(CC.PixelIdxList{1}));
+% hist = [1:256;hist'];
+% 
+% 
+% T = adaptthresh(sss,0,'ForegroundPolarity','bright');
+% BW = imbinarize(sss,T);
+% 
+% 
+% CL2h2 = imfilter(CL2,[-1 0 1]') | imfilter(CL2,[1 0 -1]');
+% CL2v2 = imdilate(image_line,strel('disk',15));
+% CL2h2 = CL2 - CL2v2 - CL2v;
+% CL2h2(CL2h2<0) = 0;
+% CL2h2 = bwareaopen(CL2h2,20);
+% CL2h2 = imopen(CL2h2,strel('disk',5));
+% 
+% props = regionprops(CL2h2,'Centroid');
+% props = reshape(cell2mat(struct2cell(props)),2,size(props,1));
+% props = [1:size(props,2);props];
+% [props(3,:), props(1,:)] = sort(props(3,:));
+% props(2,:) = props(2, props(1,:));
+% CC = bwconncomp(CL2h2,8);
+% 
+% line1 = [CC.PixelIdxList{props(1,1)};CC.PixelIdxList{props(1,2)};CC.PixelIdxList{props(1,3)};CC.PixelIdxList{props(1,4)}];
+% [line1y,line1x] = ind2sub(size(CL2v),line1); 
+% [line1_fitresult, ~] = create2poly(line1x, line1y);
+% coeffs = coeffvalues(line1_fitresult);
+% dim = size(CL2v);
+% x = 1:0.001:size(CL2v,1);
+% y = polyval(coeffs,x);
+% plot(x,y,'r');
+% line2 = [CC.PixelIdxList{props(1,9)};CC.PixelIdxList{props(1,10)};CC.PixelIdxList{props(1,11)};CC.PixelIdxList{props(1,12)};CC.PixelIdxList{props(1,13)};CC.PixelIdxList{props(1,14)};CC.PixelIdxList{props(1,15)};CC.PixelIdxList{props(1,16)}];
+% [line1y,line1x] = ind2sub(size(CL2v),line2); 
+% [line1_fitresult, ~] = createLineInv(line1y, line1x);
+% coeffs = coeffvalues(line1_fitresult);
+% x = 1:0.001:size(CL2v,1);
+% y = polyval(coeffs,x);
+% plot(y,x,'r');
+% line3 = [CC.PixelIdxList{props(1,17)};CC.PixelIdxList{props(1,18)};CC.PixelIdxList{props(1,19)};CC.PixelIdxList{props(1,20)};CC.PixelIdxList{props(1,21)};CC.PixelIdxList{props(1,22)};CC.PixelIdxList{props(1,23)};CC.PixelIdxList{props(1,24)}];
+% [line1y,line1x] = ind2sub(size(CL2v),line3); 
+% [line1_fitresult, ~] = createLineInv(line1y, line1x);
+% coeffs = coeffvalues(line1_fitresult);
+% x = 1:0.001:size(CL2v,1);
+% y = polyval(coeffs,x);
+% hold on;
+% plot(y,x,'r');
+% line4 = [CC.PixelIdxList{props(1,25)};CC.PixelIdxList{props(1,26)};CC.PixelIdxList{props(1,27)};CC.PixelIdxList{props(1,28)};CC.PixelIdxList{props(1,29)};CC.PixelIdxList{props(1,30)};CC.PixelIdxList{props(1,31)};CC.PixelIdxList{props(1,32)}];
+% [line1y,line1x] = ind2sub(size(CL2v),line4); 
+% [line1_fitresult, ~] = createLineInv(line1y, line1x);
+% coeffs = coeffvalues(line1_fitresult);
+% x = 1:0.001:size(CL2v,1);
+% y = polyval(coeffs,x);
+% hold on;
+% plot(y,x,'r');
+% 
+% 
+% tmp = CL2h2;
+% for i=1:10
+%     tmp(CC.PixelIdxList{props(1,i)}) = 0;
+%     imshow(tmp)
+%     i
+%     pause
+% end
+% 
+% 
+% %% Corner
+% cymk = rgb2cmyk(I);
+% Cyano = im2double(cymk(:,:,1));
+% Magenta = im2double(cymk(:,:,2));
+% Yellow = im2double(cymk(:,:,3));
+% TheColors = Cyano+Magenta+Yellow;
+% Key = im2double(cymk(:,:,4));
+% 
+% KEY = (1-Key);
+% ORIG = rgb2gray(im2double(O));
+% [color_filtered, color_filtered_x, color_filtered_y] = absimfilter(TheColors+left_center_axis+right_center_axis+mid_center_axis,fspecial('prewit'));
+% [key_filtered, key_filtered_x, key_filtered_y] = absimfilter(KEY,fspecial('prewit'));
+% [orig_filtered, orig_filtered_x, orig_filtered_y] = absimfilter(ORIG,fspecial('prewit'));
+% % 
+% % [eeee, eeeee, eeeeee] = absimfilter(L,fspecial('sobel'));
+% % bw = im2bw(eeee,0.3*graythresh(eeee.*FullMask));
+% % bw = imdilate(bw,strel('square',2));
+% % bw = imerode(bw,strel('square',5));
+% 
+% img_filtered = (key_filtered+orig_filtered+color_filtered)./3;
+% 
+% % ORIG_Kywahara = Kuwahara(ORIG,(4*1+1));
+% % ORIG_edge = edge(ORIG_Kywahara,'canny').*FullMask;
+% % ORIG_edge = imdilate(ORIG_edge,strel('square',4));
+% % ORIG_edge = imopen(ORIG_edge,strel('square',4));
+% % ORIG_edge = bwareaopen(ORIG_edge, 4000); % Parametro
+% % ORIG_edge = imerode(ORIG_edge,strel('square',4));
+% % ORIG_edge = bwareaopen(ORIG_edge, 4000); % Parametro
+% % ORIG_edge = imclose(ORIG_edge,strel('square',4));
+% % img_filtered = ORIG_edge.*FullMask;
+% % 
+% % imshow(imfilter(1-Key,fspecial('unsharp')))
+% bw = im2bw(img_filtered,graythresh(img_filtered.*FullMask)); % Se si cambia la soglia qua non funge più un cazzo
+% bw = imclose(bw,strel('square',5));
+% bw = bwareaopen(bw, 100); % Parametro
+% grid_image = false(size(bw));
+% horizontalCell = cell(5,20);
+% verticalCell = cell(5,20);
+% pointsArray = struct();
+% for k=1:5
+%     switch(k)
+%         case 1
+%             mask = maskCI;
+%         case 2
+%             mask = maskL1I;
+%         case 3
+%             mask = maskL2I;
+%         case 4
+%             mask = maskR1I;
+%         case 5
+%             mask = maskR2I;
+%     end
+%     mask = imdilate(mask,strel('rectangle',[2 12]));
+%     mask = imerode(mask,strel('rectangle',[14 2]));
+%     bw_edge = filledgegaps(bw.*mask,1);
+%     CC = bwconncomp(~bw_edge,4);
+%     for i=1:size(CC.PixelIdxList,2)
+%         if(size(CC.PixelIdxList{i},1)<100)
+%             bw_edge(CC.PixelIdxList{i}) = 1;
+%         end
+%     end
+%     bw_edge = filledgegaps(bw_edge,1);     
+%     horizontalEdgeImage = imfilter(bw_edge, [-1 0 1]');
+%     horizontalEdgeImage = bwareaopen(horizontalEdgeImage, 10); % Parametro
+%     horizontalEdgeImage = filledgegaps(horizontalEdgeImage,9);
+%     horizontalEdgeImage = bwareaopen(horizontalEdgeImage, 100); % Parametro
+%     CCh = bwconncomp(horizontalEdgeImage,8);
+%     horizontal_image = false(size(horizontalEdgeImage));
+%     for i = 1:size(CCh.PixelIdxList,2)
+%         [idy,idx] = ind2sub(size(I),CCh.PixelIdxList{i});  % Ma è giusta sta size? I è a 3 dimensioni    
+%         [horizonta_fitresult, horiz_gof] = createCircle(idx, idy);
+%         coeffs = coeffvalues(horizonta_fitresult);
+%         x = 1:size(horizontalEdgeImage,2);
+%         y = round(polyval(coeffs,x));
+%         x(y<1 | y>size(horizontalEdgeImage,1)) = [];
+%         y(y<1 | y>size(horizontalEdgeImage,1)) = [];
+%         for j = 1:size(x,2)
+%             horizontal_image(y(j),x(j)) = 1;
+%         end
+%         plot(x,y,'k'); 
+%         horizontalCell{k,i} = horizonta_fitresult;
+%     end
+%     grid_image = grid_image | horizontal_image;
+%     tmp_grid_image = horizontal_image;
+%     horizontal_image = imdilate(horizontal_image,strel('disk',2));
+%     verticalEdgeImage = imfilter(bw_edge, [-1 0 1]);
+%     verticalEdgeImage = bwareaopen(verticalEdgeImage, 20); % Parametro
+%     verticalEdgeImage = (verticalEdgeImage - horizontal_image)>0;
+%     verticalEdgeImage = filledgegapsel(verticalEdgeImage,3,8);
+%     verticalEdgeImage = bwareaopen(verticalEdgeImage, 100); % Parametro
+%     CCv = bwconncomp(verticalEdgeImage,8);
+%     vertical_image = false(size(verticalEdgeImage));
+%     for i = 1:size(CCv.PixelIdxList,2)
+%         [idy,idx] = ind2sub(size(I),CCv.PixelIdxList{i});
+%         [vertical_fitresult, vert_gof] = createLine(idy, idx);
+%         coeffs = coeffvalues(vertical_fitresult);
+%         y = 1:0.01:size(verticalEdgeImage,1);
+%         x = polyval(coeffs,y);
+%         for j = 1:size(x,2)
+%             vertical_image(round(y(j)),round(x(j))) = 1;
+%         end
+%         plot(x,y,'k');
+%         verticalCell{k,i} = vertical_fitresult;
+%     end
+%     grid_image = grid_image | vertical_image;   
+% %     Se la distanza tra due rette e minore di una soglia allora sono la
+% %     stessa retta, riusa i punti per farne una nuova, oppure se si
+% %     intersecano sull'immagine e sicuro un errore
+% %     [idy,idx] = ind2sub(size(I),CCo.PixelIdxList{1}); [idy1,idx1] = ind2sub(size(I),CCo.PixelIdxList{2});
+% %     [oriz_fitresult, oriz_gof] = createFit([idx;idx1], [idy;idy1]);
+% %     imshow(I); hold on; plot(oriz_fitresult,'b'); 
+% %     pause 
+% % usare prima le rette per unire pezzi spuri di contorni e poi interpolare
+%      mask = imdilate(mask,strel('rectangle',[12 12]));
+%      tmp_grid_image = (vertical_image | tmp_grid_image).*mask;
+%      [y_rj_matrix, x_cj_matrix] = findIntersections(horizontalCell(k,:), verticalCell(k,:), mask);
+% %     [rj, cj, ~, ~] = findendsjunctions(bw_edge.*mask, 0,k); % Eventualmente fare la media con questi per rendere il tutto più "preciso"
+%      scatter(x_cj_matrix(:),y_rj_matrix(:));
+% end
 % positions = [{'Left'} {'Center'} {'Right'}];
 % types = [{'Primary'} {'Secondary'} {'Real'}];
 %% Divido i punti per ogni componente
