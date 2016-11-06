@@ -524,7 +524,10 @@ img_filtered = (key_filtered+orig_filtered+color_filtered)./3;
 bw = im2bw(img_filtered,graythresh(img_filtered.*FullMask)); % Se si cambia la soglia qua non funge più un cazzo
 bw = imclose(bw,strel('square',5));
 bwV = bwareaopen(bw, 100); % Parametro
-for i=1:5
+pointsArray = struct();
+horizontalCell = cell(5,20);
+verticalCell = cell(5,20);
+for i=1:5 % Non sei indipendente dal numero di riflessi
     switch (i)
         case 1
             % Left Secondary Reflection
@@ -567,8 +570,15 @@ for i=1:5
     gapGRID = line2image(obj_chess(id_obj_chess(1)).chess(id_chess(1)).v_lines{1},size(mask));
     gapGRID = gapGRID | line2image(obj_chess(id_obj_chess(end)).chess(id_chess(end)).v_lines{end},size(mask));
     [GRIDhh, GRIDh] = getHImage(grid_pos,grid_typ,obj_chess, order, label, size(maskI), maskI);
+    GRIDh_filled = filledgegaps(GRIDh.*imerode(maskI,strel('rectangle',[30,2])),30);
+    CC_GRIDh = bwconncomp(GRIDh_filled,8);
+    for h_count=1:CC_GRIDh.NumObjects
+        [circley,circlex] = ind2sub(size(mask),CC_GRIDh.PixelIdxList{h_count}); 
+         horizontalCell{i,h_count} = createLineInv(circley,circlex,size(mask));
+    end
+     
     GRIDvv = getVImage(bwV, maskI, GRIDh);
-    GRID = imerode(maskI,strel('rectangle',[30,10])) & ~mask & ~imdilate(gapGRID,strel('disk',12)) | GRIDvv;
+    GRID = imerode(maskI,strel('rectangle',[30,10])) & ~mask & ~imdilate(gapGRID,strel('disk',12));% | GRIDvv;
     % ordina i blob in base alla distanza dalla retta destra e sinistra,
     % misura la distanza media, usa questa per definire di quanto allargare
     % le rette che tagliano il bordo più esterno
@@ -591,7 +601,7 @@ for i=1:5
     [props(2,:), props(1,:)] = sort(props(2,:));
     props(3,:) = props(3, props(1,:));
     CC = bwconncomp(GRIDv,8); usu_center = [zeros(1,size(props_center,2));props_center]; usu = CC.NumObjects;
-    figure, imshow(I); hold on; image_line = false(size(GRIDv));
+    figure, imshow(I); hold on; image_line = false(size(GRIDv)); idx_line = 1;
     for j=1:size(idl,2)
         for l=1:size(obj_chess(id_obj_chess(j)).chess(id_chess(j)).v_lines_centroid,2)
             line = obj_chess(id_obj_chess(j)).chess(id_chess(j)).v_lines_centroid{l};
@@ -610,6 +620,7 @@ for i=1:5
                     [liney,linex] = ind2sub(size(GRIDv),lines); 
                     [linefitresult, ~] = createLineInv(liney, linex, size(GRIDv));
                     coeffs = coeffvalues(linefitresult);
+                    % Sostituire con funzione line2image
                     x = 1:0.001:size(GRIDv,2);
                     y = floor(polyval(coeffs,x));
                     x = floor(x);
@@ -619,6 +630,8 @@ for i=1:5
                         image_line(y(count),x(count)) = 1;
                     end
                     plot(linefitresult);
+                    verticalCell{i,idx_line} = linefitresult;
+                    idx_line = idx_line + 1;
                 end
             end
         end
@@ -647,6 +660,8 @@ for i=1:5
                 image_line(y(count),x(count)) = 1;
             end
             plot(linefitresult);
+            verticalCell{i,idx_line} = linefitresult;
+            idx_line = idx_line + 1;
         end
     end
 % Orizzontale    
@@ -714,6 +729,10 @@ for i=1:5
         end
     end
     figure, imshow(I), hold on, scatter(P(:,2),P(:,1));
+    [y_rj_matrix, x_cj_matrix] = orderPoints(P, horizontalCell(i,:), verticalCell(i,:), maskI);
+    pointsArray.x_points{k} = x_cj_matrix;
+    pointsArray.y_points{k} = y_rj_matrix;
+    figure, imshow(I), hold on, scatter(x_cj_matrix(:),y_rj_matrix(:));
 end
 
 % CL2v = GRIDv;
@@ -824,6 +843,8 @@ for i=1:CC.NumObjects
     sss_image(min(cutR):max(cutR),min(cutC):max(cutC),1) = bw_tmp;
     sss_image(min(cutR)+YY,min(cutC)+XX,2) = 1;
     P = [P;min(cutR)+YY,min(cutC)+XX];
+         pointsArray.x_points{k} = x_cj_matrix;
+     pointsArray.y_points{k} = y_rj_matrix;
 end
 
 figure, imshow(I); hold on; scatter(P(:,2),P(:,1))
@@ -1023,8 +1044,6 @@ for k=1:5
      [y_rj_matrix, x_cj_matrix] = findIntersections(horizontalCell(k,:), verticalCell(k,:), mask);
 %     [rj, cj, ~, ~] = findendsjunctions(bw_edge.*mask, 0,k); % Eventualmente fare la media con questi per rendere il tutto più "preciso"
      scatter(x_cj_matrix(:),y_rj_matrix(:));
-     pointsArray.x_points{k} = x_cj_matrix;
-     pointsArray.y_points{k} = y_rj_matrix;
 end
 % positions = [{'Left'} {'Center'} {'Right'}];
 % types = [{'Primary'} {'Secondary'} {'Real'}];
