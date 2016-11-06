@@ -409,6 +409,7 @@ end
 inv_BW = bwD & ~BW;
 obj.inv_color_mask = inv_BW;
 obj.color_mask = bwD & ~inv_BW;
+obj.color_mask = imopen(obj.color_mask,strel('square',4));
 
 
 for i = 1:size(x,1)
@@ -428,6 +429,7 @@ for i = 1:size(x,1)
 end
 close all;
 figure,imshow(BW); hold on;
+toFix = false;
 for i = 1:size(x,1)
     X = obj.chess(i).center_x;
     Y = obj.chess(i).center_y;
@@ -438,12 +440,12 @@ for i = 1:size(x,1)
     axis = 1:5; axis(id_row) = [];
     for k=1:size(X,2)
         value = X(:,k); value(X(:,k)==0) = [];
-        if(size(value,2) <=1)
+        if(size(value,1) <=1)
             continue
         end
         X(:,k) = pchip(axis,value,1:5);
         value = Y(:,k); value(Y(:,k)==0) = [];
-        if(size(value,2) <=1)
+        if(size(value,1) <=1)
             continue
         end
         Y(:,k) = pchip(axis,value,1:5); 
@@ -474,48 +476,64 @@ for i = 1:size(x,1)
     end  
     obj.chess(i).center_x = X;
     obj.chess(i).center_y = Y;
-    ind = find(obj.chess(i).center_x==0);
-    while(size(ind,1)>0)
-        %       mod(4,2)   % Even  number
-        %       ans = 0
-        %       mod(5,2)   % even number 
-        %       ans =1
-        [id_row,id_col]=ind2sub(size(obj.chess(i).center_x),ind(1)); %Prendo sempre il primo
-        X = obj.chess(i).center_x(:,id_col);
-        Y = obj.chess(i).center_y(id_row,:);
-        xv = 1:size(X,1);
-        yv = 1:size(Y,2);    
-        X_pchip = X; X_pchip(X==0)=[];
-        Y_pchip = Y; Y_pchip(Y==0)=[];
-        if(size(X_pchip,1) == 1) % Se abbiamo solo un punto switcha sulle righe/colle
-            X = obj.chess(i).center_x(id_row,:);
-            xv = 1:size(X,1);   
-            X_pchip = X; X_pchip(X==0)=[];
-        end
-        if(size(Y_pchip,2) == 1)
-            Y = obj.chess(i).center_y(:,id_col);
-            yv = 1:size(Y,1);    
-            Y_pchip = Y; Y_pchip(Y==0)=[];
-        end
-        xv_pchip = xv; xv_pchip(X==0)=[];
-        yv_pchip = yv; yv_pchip(Y==0)=[];
-        if(size(yv_pchip,2) == 1 || size(xv_pchip,2) == 1) % Se quanto fatto prima non risolve cancella la colonna
-            continue;
-        end
-        val_x =  pchip(xv_pchip,X_pchip',xv);
-        o = obj.chess(i).center_x;
-        obj.chess(i).center_x(id_row,id_col) = val_x(id_row);
-        o =  obj.chess(i).center_y;
-        val_y = pchip(yv_pchip,Y_pchip,yv);
-        obj.chess(i).center_y(id_row,id_col) = val_y(id_col); 
+    if toFix
         ind = find(obj.chess(i).center_x==0);
-        disp(['fix',num2str(i)]);
-    end
-    for k=1:size(obj.chess(i).center_x,1)
-        for j=1:size(obj.chess(i).center_x,2)
-            scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j));
+        while(size(ind,1)>0)
+            %       mod(4,2)   % Even  number
+            %       ans = 0
+            %       mod(5,2)   % even number 
+            %       ans =1
+            [id_row,id_col]=ind2sub(size(obj.chess(i).center_x),ind(1)); %Prendo sempre il primo
+            X = obj.chess(i).center_x(:,id_col);
+            Y = obj.chess(i).center_y(id_row,:);
+            xv = 1:size(X,1);
+            yv = 1:size(Y,2);    
+            X_pchip = X; X_pchip(X==0)=[];
+            Y_pchip = Y; Y_pchip(Y==0)=[];
+            if(size(X_pchip,1) == 1) % Se abbiamo solo un punto switcha sulle righe/colle
+                X = obj.chess(i).center_x(id_row,:);
+                xv = 1:size(X,1);   
+                X_pchip = X; X_pchip(X==0)=[];
+            end
+            if(size(Y_pchip,2) == 1)
+                Y = obj.chess(i).center_y(:,id_col);
+                yv = 1:size(Y,1);    
+                Y_pchip = Y; Y_pchip(Y==0)=[];
+            end
+            xv_pchip = xv; xv_pchip(X==0)=[];
+            yv_pchip = yv; yv_pchip(Y==0)=[];
+            if(size(yv_pchip,2) == 1 || size(xv_pchip,2) == 1) % Se quanto fatto prima non risolve cancella la colonna
+                continue;
+            end
+            val_x =  pchip(xv_pchip,X_pchip',xv);
+            o = obj.chess(i).center_x;
+            obj.chess(i).center_x(id_row,id_col) = val_x(id_row);
+            o =  obj.chess(i).center_y;
+            val_y = pchip(yv_pchip,Y_pchip,yv);
+            obj.chess(i).center_y(id_row,id_col) = val_y(id_col); 
+            ind = find(obj.chess(i).center_x==0);
+            disp(['fix',num2str(i)]);
         end
-    end 
+        for k=1:size(obj.chess(i).center_x,1)
+            for j=1:size(obj.chess(i).center_x,2)
+                scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j));
+            end
+        end 
+    end
+end
+
+for i=1:size(obj.chess,2)
+    X = obj.chess(i).center_x;
+    Y = obj.chess(i).center_y;
+    obj.chess(i).v_lines_centroid = cell(1,size(X,2));
+    for k=1:size(X,2)
+        if(isempty(find(X(:,k)==0, 1)))
+            [fitresult, ~] = createLineInv(Y(:,k),X(:,k),size(obj.color_mask));
+            obj.chess(i).v_lines_centroid{k} = fitresult;
+        else
+            obj.chess(i).v_lines_centroid{k} = [];
+        end
+    end   
 end
 
 

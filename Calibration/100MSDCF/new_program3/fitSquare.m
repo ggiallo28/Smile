@@ -136,10 +136,10 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
 
     [idx_left,idy_left] = ind2sub(size(color_square),ccleft);
     
-    [fitresult_left, ~] = createLine(idy_left,idx_left);
+    [fitresult_left, ~] = createLineInv(idx_left,idy_left,size(color_square));
     plot(fitresult_left);
     [idx_right,idy_right]=ind2sub(size(color_square),ccright);
-    [fitresult_right, ~] = createLine(idy_right,idx_right);
+    [fitresult_right, ~] = createLineInv(idx_right,idy_right,size(color_square));
     plot(fitresult_right);
     chess.v_lines = cell(1,2);
     chess.v_lines{1} = fitresult_left;

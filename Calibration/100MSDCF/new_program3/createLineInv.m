@@ -1,4 +1,4 @@
-function [fitresult, gof] = createLineInv(line1y, line1x)
+function [fitresult, gof] = createLineInv(line1y, line1x, dim)
 %CREATEFIT(LINE1Y,LINE1X)
 %  Create a fit.
 %
@@ -21,5 +21,18 @@ function [fitresult, gof] = createLineInv(line1y, line1x)
 ft = fittype( 'poly1' );
 
 % Fit model to data.
-[fitresult, gof] = fit( xData, yData, ft );
+[fitresult, ~] = fit( xData, yData, ft );
+coeffs = coeffvalues(fitresult);
+image = false(dim);
+x = 1:0.1:dim(1);
+y = floor(polyval(coeffs,x));
+x = floor(x);
+x(y<1 | y>dim(2)) = [];
+y(y<1 | y>dim(2)) = [];
+for j = 1:size(x,2)
+    image(x(j),y(j)) = 1;
+end
+[liney,linex] = ind2sub(dim,find(image==1));
+[fitresult, gof] = createLine(linex,liney);
+
 

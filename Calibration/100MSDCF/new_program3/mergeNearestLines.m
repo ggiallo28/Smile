@@ -28,24 +28,24 @@ function Lines = mergeNearestLines(Lines, numLines, dim  )
             line = [line; CC_merge.PixelIdxList{k}];
         end
         [liney,linex] = ind2sub(dim,line); 
-        [line_fitresult, ~] = createLineInv(liney, linex);
-        coeffs = coeffvalues(line_fitresult);
-        x = 1:0.001:dim(1);
-        y = floor(polyval(coeffs,x));
-        x = floor(x);
-        x(y<1 | y>dim(2)) = [];
-        y(y<1 | y>dim(2)) = [];
-        image_line = false(dim);
-        for j = 1:size(x,2)
-            image_line(x(j),y(j)) = 1;
-        end
-        CC_merge = bwconncomp(image_line,8);
-        line = [];
-        for k=1:CC_merge.NumObjects
-            line = [line; CC_merge.PixelIdxList{k}];
-        end
-        [liney,linex] = ind2sub(dim,line); 
-        [line_fitresult, ~] = createLine(linex, liney);
+        [line_fitresult, ~] = createLineInv(liney, linex,dim);
+%         coeffs = coeffvalues(line_fitresult);
+%         x = 1:0.001:dim(1);
+%         y = floor(polyval(coeffs,x));
+%         x = floor(x);
+%         x(y<1 | y>dim(2)) = [];
+%         y(y<1 | y>dim(2)) = [];
+%         image_line = false(dim);
+%         for j = 1:size(x,2)
+%             image_line(x(j),y(j)) = 1;
+%         end
+%         CC_merge = bwconncomp(image_line,8);
+%         line = [];
+%         for k=1:CC_merge.NumObjects
+%             line = [line; CC_merge.PixelIdxList{k}];
+%         end
+%         [liney,linex] = ind2sub(dim,line); 
+%         [line_fitresult, ~] = createLine(linex, liney);
         Lines{idx2merge(i)+1} = [];
         Lines{idx2merge(i)} = line_fitresult;
     end
