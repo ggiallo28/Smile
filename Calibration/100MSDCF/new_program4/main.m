@@ -2,7 +2,7 @@ close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
 checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
-orig = imread(['foto/DSC0014',num2str(7),'_1.JPG']);
+orig = imread(['foto/DSC0014',num2str(7),'.JPG']);
 orig_bg = imread(['foto/DSC0014',num2str(8),'.JPG']);
 %% Normalizzazione
 figure, [O, BB] = imcrop(orig);
@@ -26,7 +26,7 @@ K(:,:,2) = Gt.*(2-L);
 K(:,:,3) = Bt.*(2-L);
 I_BG = im2uint8(K);
 %% Parametri
-confidence = 2.8;
+confidence = 2.5;
 [r,c] = size(I); Threshold = round(r*c/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
 mpd = 15;
 windowSize = 5;
@@ -71,8 +71,8 @@ for i=1:size(stats)
     end
 end
 figure, imshow(maskedRGBImage);
-figure, imshow((I-maskedRGBImage).*repmat(uint8(bw),[1 1 3]));
 inImg = (I-maskedRGBImage).*repmat(uint8(bw),[1 1 3]);
+figure, imshow(inImg);
 %% Histogram Peak Finding
 Rp = inImg(:,:,1); Rp = Rp(bw);
 Gp = inImg(:,:,2); Gp = Gp(bw);
@@ -92,6 +92,34 @@ obj_yellow = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'yellow'
 % erodere e risegmentare
 % dilatare un pochino il bbox perchè nella fit square può succedere che si
 % vada a finire fuori
+% 
+% cform = makecform('srgb2lab');
+% he = inImg;
+% lab_he = applycform(he,cform);
+% ab = double(lab_he(:,:,2:3));
+% nrows = size(ab,1);
+% ncols = size(ab,2);
+% ab = reshape(ab,nrows*ncols,2);
+% 
+% nColors = 5;
+% % repeat the clustering 3 times to avoid local minima
+% [cluster_idx, cluster_center] = kmeans(ab,nColors,'distance','sqEuclidean','Replicates',3);
+% pixel_labels = reshape(cluster_idx,nrows,ncols);
+% imshow(pixel_labels,[]), title('image labeled by cluster index');
+% segmented_images = cell(1,3);
+% rgb_label = repmat(pixel_labels,[1 1 3]);
+% 
+% for k = 1:nColors
+%     color = he;
+%     color(rgb_label ~= k) = 0;
+%     segmented_images{k} = color;
+% end
+% 
+% figure, imshow(segmented_images{1}), title('objects in cluster 1');
+% figure, imshow(segmented_images{2}), title('objects in cluster 2');
+% figure, imshow(segmented_images{3}), title('objects in cluster 3');
+% figure, imshow(segmented_images{4}), title('objects in cluster 4');
+% figure, imshow(segmented_images{5}), title('objects in cluster 5');
 %% Identifica colori usando Background, Error Check
 for s=1:2
     switch(s)
@@ -177,7 +205,7 @@ for l=1:size(obj_chess,1)
 end
 BW = uint8(255.*(inv_BW-col_BW));
 fuse = colors_fuse+repmat(BW,[1 1 3]);
-imshow([fuse;I]); hold on;
+imshow([I;fuse]); hold on;
 for l=1:size(obj_chess,1)
     obj = obj_chess(l);
     for i = 1:size(obj.chess,2)
@@ -868,25 +896,39 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
             idx_line = idx_line + 1;
         end
     end
+% Provo con la funzione di matlab, se questa non rintraccia alcuni punti
+% allora provo con il mio metodo
+%    [imagePoints,boardSize] = detectCheckerboardPoints(I.*repmat(uint8(maskI),1,1,3));
 % Orizzontale    
     GRIDv2 = imdilate(image_line,strel('disk',10));
-    gray = im2double(rgb2gray(I));
-    sss = gray.*GRIDv2.*imdilate(GRIDh,strel('disk',10));
-    sss = sss.*bwareaopen(sss>0,10);
-    CC = bwconncomp(sss>0,8);
-    sss_image = zeros(size(sss,1),size(sss,2),3); P = [];
+    MINRGB = min(R,G); MINRGB = min(MINRGB,B);
+    MAXRGB = max(R,G); MAXRGB = max(MAXRGB,B);
+    gray = 0.5*MINRGB+0.5*MAXRGB;
+    sep_mask = GRIDv2.*imdilate(GRIDh,strel('disk',10));
+    sep_squares = gray.*sep_mask;
+    sep_squares = sep_squares.*bwareaopen(sep_squares>0,10);
+    CC = bwconncomp(sep_squares>0,8);
+%     for l=1:CC.NumObjects
+%         if(isFound(imagePoints,CC.PixelIdxList{l},size(sep_squares)))
+%             sep_squares(CC.PixelIdxList{l}) = 0;
+%         end
+%     end
+%     CC = bwconncomp(sep_squares>0,8);
+    sss_image = zeros(size(sep_squares,1),size(sep_squares,2),3); P = [];
     for l=1:CC.NumObjects
-        [cutR,cutC] = ind2sub(size(GRIDv),CC.PixelIdxList{l}); 
-        tmp = sss(min(cutR):max(cutR),min(cutC):max(cutC));
+        [cutR,cutC] = ind2sub(size(GRIDv),CC.PixelIdxList{l});
+        tmp = sep_squares(min(cutR):max(cutR),min(cutC):max(cutC));
         tt = 0.3*size(tmp,1)*size(tmp,2);
         condition = true;
         th = 0.9; store = cell(2,1);
         dot = findDots(tmp);
         %figure, imshow(tmp), hold on, scatter(dot(:,1),dot(:,2))
-        P = [P;min(cutR)+dot(:,2),min(cutC)+dot(:,1)];
+        P = [P;min(cutR)+dot(:,2),min(cutC)+dot(:,1)];      
         if(isempty(dot))
+            figure,
             while(condition && th>0)
                 bw_tmp = im2bw(tmp,th);
+                imshow(bw_tmp);
                 th = th-0.01;
                 CC_tmp = bwconncomp(bw_tmp,4);        
                 if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)
@@ -914,22 +956,16 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
                    store(2) = CC_tmp.PixelIdxList(2);          
                 end 
             end
-            dot = findDots(bw_tmp);
-            if(isempty(dot))
-                    [D(5,:), idd] = sort(D(5,:));
-                    D(1,:) = D(1,idd);
-                    D(2,:) = D(2,idd);
-                    D(3,:) = D(3,idd);
-                    D(4,:) = D(4,idd);
-                    XX = round(mean([D(1,1:5),D(3,1:5)]));
-                    YY = round(mean([D(2,1:5),D(4,1:5)]));
-                    %figure, imshow(bw_tmp), hold on, scatter(XX,YY);
-                    sss_image(min(cutR):max(cutR),min(cutC):max(cutC),1) = bw_tmp;
-                    sss_image(min(cutR)+YY,min(cutC)+XX,2) = 1;
-            else
-                YY = dot(2);
-                XX = dot(1);
-            end
+                [D(5,:), idd] = sort(D(5,:));
+                D(1,:) = D(1,idd);
+                D(2,:) = D(2,idd);
+                D(3,:) = D(3,idd);
+                D(4,:) = D(4,idd);
+                XX = round(mean([D(1,1:5),D(3,1:5)]));
+                YY = round(mean([D(2,1:5),D(4,1:5)]));
+                %figure, imshow(bw_tmp), hold on, scatter(XX,YY);
+                sss_image(min(cutR):max(cutR),min(cutC):max(cutC),1) = bw_tmp;
+                sss_image(min(cutR)+YY,min(cutC)+XX,2) = 1;
                 P = [P;min(cutR)+YY,min(cutC)+XX];        
         end
     end

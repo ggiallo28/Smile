@@ -8,6 +8,7 @@ switch band
         red_th_min = output_minima_mid(1)/hist_size;
         red_th_max = output_minima_mid(4)/hist_size;
         bw_red = (hsv_inImg(:,:,1)<=red_th_min | hsv_inImg(:,:,1)>=red_th_max) & bw;
+        bw_red = imopen(bw_red,strel('rectangle',[2,15]));
         bw_red = bwareaopen(bw_red,Threshold);
         bw_red = imclose(bw_red,strel('square',10));
         figure, imshow(RGB.*repmat(bw_red,[1 1 3]));
@@ -52,6 +53,7 @@ switch band
         green_th_min = output_minima_mid(2)/hist_size;
         green_th_max = output_minima_mid(3)/hist_size;
         bw_green = hsv_inImg(:,:,1)>=green_th_min & hsv_inImg(:,:,1)<=green_th_max & bw;
+        bw_green = imopen(bw_green,strel('rectangle',[2,15]));
         bw_green = bwareaopen(bw_green,Threshold);
         bw_green = imclose(bw_green,strel('square',10));
         figure, imshow(RGB.*repmat(bw_green,[1 1 3]));
@@ -95,6 +97,7 @@ switch band
         blu_th_min = output_minima_mid(3)/hist_size;
         blu_th_max = output_minima_mid(4)/hist_size;
         bw_blu = hsv_inImg(:,:,1)>=blu_th_min & hsv_inImg(:,:,1)<=blu_th_max & bw;
+        bw_blu = imopen(bw_blu,strel('rectangle',[2,15]));
         bw_blu = bwareaopen(bw_blu,Threshold);
         bw_blu = imclose(bw_blu,strel('square',10));
         figure, imshow(RGB.*repmat(bw_blu,[1 1 3]));
@@ -139,6 +142,7 @@ switch band
         yellow_th_min = output_minima_mid(1)/hist_size;
         yellow_th_max = output_minima_mid(2)/hist_size;
         bw_yellow = hsv_inImg(:,:,1)>=yellow_th_min & hsv_inImg(:,:,1)<=yellow_th_max & bw;
+        bw_yellow = imopen(bw_yellow,strel('rectangle',[2,15]));
         bw_yellow = bwareaopen(bw_yellow,Threshold);
         bw_yellow = imclose(bw_yellow,strel('square',10));
         figure, imshow(RGB.*repmat(bw_yellow,[1 1 3]));

@@ -1,8 +1,8 @@
-function points0 = findDots(Igray)
+function points = findDots(Igray)
     Isin = im2single(Igray);
-    % Provo a detect a differenti risoluzioni
+    % Provo la detect a differenti risoluzioni
     sigma = 2; 
-    peakThreshold = 0.15; % threshold for corner metric
+    peakThreshold = 0.10; % threshold for corner metric
 
     G = fspecial('gaussian', round(sigma * 7)+1, sigma);
     Ig = imfilter(Isin, G, 'conv');
@@ -41,7 +41,7 @@ function points0 = findDots(Igray)
     Ix2 = imfilter(Ix2, G);
     Iy2 = imfilter(Iy2, G);
     Ixy = imfilter(Ixy, G);
-
-    points0 = find_peaks(cxy, peakThreshold);
+    
+    points = find_peaks(cxy, peakThreshold);
 end
 
