@@ -5,17 +5,17 @@ function code = name2code(name)
     name = lower(name);
     switch name
         case 'red'
-            code = [255,0,0;255,0,255];
+            code = [255,0,0];
         case 'green'
             code = [0,255,0];
         case 'blue'
-            code = [0,0,255;0,255,255];
-        case 'violet'
-            code = [255,0,255;255,0,0];
+            code = [0,0,255];
+        case 'magenta'
+            code = [255,0,255];
         case 'yellow'
             code = [255,255,0];
-        case 'light_blue'
-            code = [0,255,255;0,0,255];        
+        case 'cyan'
+            code = [0,255,255];        
         case 'white'
             code = [255,255,255];
         case 'black'

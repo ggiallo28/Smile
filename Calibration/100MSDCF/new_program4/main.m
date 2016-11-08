@@ -2,8 +2,8 @@ close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
 checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
-orig = imread(['foto/DSC0012',num2str(7),'.JPG']);
-orig_bg = imread(['foto/DSC0012',num2str(8),'.JPG']);
+orig = imread(['foto/DSC0014',num2str(7),'_1.JPG']);
+orig_bg = imread(['foto/DSC0014',num2str(8),'.JPG']);
 %% Normalizzazione
 figure, [O, BB] = imcrop(orig);
 R = im2double(O(:,:,1));
@@ -87,20 +87,97 @@ obj_red = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'red');
 obj_green = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'green');
 obj_blue = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'blue');
 obj_yellow = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'yellow');
-obj_chess = [obj_red;obj_green;obj_blue;obj_yellow];
 % Se il contorno di sopra o sotto è troppo piccolo usare bbox
 % Per eliminare merde laterali puoi calcolare la maskera con la fit square,
 % erodere e risegmentare
 % dilatare un pochino il bbox perchè nella fit square può succedere che si
 % vada a finire fuori
+%% Identifica colori usando Background, Error Check
+for s=1:2
+    switch(s)
+        case 1
+            obj2split = obj_blue;
+        case 2
+            obj2split = obj_red;
+    end
+    for k=1:2   
+        switch(str2double([num2str( s ),num2str( k )]))
+            case 11 
+                obj2use = objBlobs('cyan');
+                color2find = 'Black';
+                color_value = [0, 255, 255];
+            case 12
+                obj2use = objBlobs('blue');
+                color2find = 'White';
+                color_value = [0, 0, 255];
+            case 21
+                obj2use = objBlobs('magenta');
+                color2find = 'Black';
+                color_value = [255, 0, 255];
+            case 22
+                obj2use = objBlobs('red');
+                color2find = 'White';
+                color_value = [255, 0, 0];
+        end
+        idk = 1;
+        for i=1:size(obj2split.chess,2)
+            if(strcmp(obj2split.chess(i).background,color2find))
+                obj2use.isEmpty = false;
+                obj2use.chess(idk) = objChess();
+                obj2use.chess(idk) = obj2split.chess(i);
+                x_split = obj2split.bbox_x(i,:);
+                y_split = obj2split.bbox_y(i,:);
+                obj2use.bbox_x(idk,1:2) = x_split;
+                obj2use.bbox_y(idk,1:2) = y_split;
+                if(obj2use.color_mask == 0)
+                    obj2use.color_mask = false(size(obj2split.color_mask));
+                end
+                obj2use.color_mask(y_split(1):y_split(2),x_split(1):x_split(2)) =...
+                    obj2split.color_mask(y_split(1):y_split(2),x_split(1):x_split(2));
+                if(obj2use.inv_color_mask == 0)
+                    obj2use.inv_color_mask = false(size(obj2split.color_mask));
+                end
+                obj2use.inv_color_mask(y_split(1):y_split(2),x_split(1):x_split(2)) =...
+                     obj2split.inv_color_mask(y_split(1):y_split(2),x_split(1):x_split(2));
+                if(obj2use.black_white == 0)
+                    obj2use.black_white = false(size(obj2split.color_mask));
+                end 
+                obj2use.black_white(y_split(1):y_split(2),x_split(1):x_split(2)) =...
+                     obj2split.black_white(y_split(1):y_split(2),x_split(1):x_split(2));
+                if(obj2use.masked_rgb == 0)
+                    obj2use.masked_rgb = uint8(zeros(size(obj2split.color_mask,1),size(obj2split.color_mask,2),3));
+                end
+                Rband = obj2use.masked_rgb(:,:,1); Gband = obj2use.masked_rgb(:,:,2); Bband = obj2use.masked_rgb(:,:,3);
+                Rband(obj2use.color_mask) = color_value(1); Gband(obj2use.color_mask) = color_value(2); Bband(obj2use.color_mask) = color_value(3);
+                obj2use.masked_rgb(:,:,1)=Rband; obj2use.masked_rgb(:,:,2)=Gband; obj2use.masked_rgb(:,:,3)=Bband; 
+                idk = idk +1;
+            end
+        end      
+        switch(str2double([num2str( s ),num2str( k )]))
+            case 11
+                obj_ciano = obj2use;
+            case 12
+                obj_blue_splitted = obj2use;
+            case 21
+                obj_magenta = obj2use;
+            case 22
+                obj_red_splitted = obj2use;
+        end
+    end
+end
+obj_chess = [obj_red_splitted;obj_green;obj_blue_splitted;obj_yellow;obj_ciano;obj_magenta];
 %% Plot Results
-inv_BW = uint8(obj_red.black_white|obj_green.black_white|obj_blue.black_white|obj_yellow.black_white);
-col_BW = uint8(obj_red.color_mask|obj_green.color_mask|obj_blue.color_mask|obj_yellow.color_mask);
-dual_BW = uint8(obj_red.inv_color_mask|obj_green.inv_color_mask|obj_blue.inv_color_mask|obj_yellow.inv_color_mask);
-BW = 255*(inv_BW-col_BW);
-colors_fuse = obj_red.masked_rgb+obj_green.masked_rgb+obj_blue.masked_rgb+obj_yellow.masked_rgb;
+inv_BW = false(size(obj_chess(1).black_white)); col_BW = inv_BW; dual_BW = col_BW;
+colors_fuse = uint8(zeros(size(obj_chess(1).masked_rgb)));
+for l=1:size(obj_chess,1)
+    inv_BW = inv_BW | obj_chess(l).black_white;
+    col_BW = col_BW | obj_chess(l).color_mask;
+    dual_BW = dual_BW| obj_chess(l).inv_color_mask;
+    colors_fuse = colors_fuse + obj_chess(l).masked_rgb;
+end
+BW = uint8(255.*(inv_BW-col_BW));
 fuse = colors_fuse+repmat(BW,[1 1 3]);
-imshow(fuse); hold on;
+imshow([fuse;I]); hold on;
 for l=1:size(obj_chess,1)
     obj = obj_chess(l);
     for i = 1:size(obj.chess,2)
@@ -214,61 +291,64 @@ for l=1:size(obj_chess,1)
         for i = 1:size(obj_chess(l).chess,2)
             % Se non si tratta di una tessera centrale, non ha senso analzizarla di sicuro non è ne primaria ne secondaria
             if(~strcmp(obj_chess(l).chess(i).position,positions(2)))
-                % Recovery del colore, non siamo in grado di distinguere tra il viola/rosso blu/azzurro
                 curr_color = name2code(obj_chess(l).name);
-                curr_background = name2code(obj_chess(l).chess(i).background);
-                idc = find(sum(checker_vector(1,:,:),3)==sum(curr_background));
-                if(find(sum(checker_vector(2,idc(1):idc(end),:),3)==sum(curr_color(1,:))))
-                    curr_color = curr_color(1,:);
-                else
-                	curr_color = curr_color(2,:);
-                end
                 % Cerchiamo la tessera corrente nel vettore di ordine
                 idx = find(order(3,:) == obj_chess(l).chess(i).centroid(1));
                 % Cerchiamo la posizione della tessera centrale
                 labs = find(strcmp(label(3,:),positions(2)));
-                % Se idx è precedente della prima tessera centrale e non è la prima tessera
-                % Allora guardiamo a sinistra e preleviamo il colore della tessera che sta a sinsitra della corrente 
-                
-                % DOMANDA: Se è la prima tessera idx = 1 a non avere associazione? Questo non può capitare
-                % devo vedere almeno due colori per riflesso, quindi della tessera con idx=1 devo necessariamnte vedere due rifelssi
-                % a sinistra o a destra, idem per l'ultima. Il caso una a destra e uno a sinistra è gestito precedentemente.
-                if(idx < labs(1) && idx~=1)
-                    % Recovery del colore, non siamo in grado di distinguere tra il viola/rosso blu/azzurro
-                    color = name2code(obj_chess(order(1,idx-1)).name);
-                    background = name2code(obj_chess(order(1,idx-1)).chess(order(2,idx-1)).background);
-                    idc = find(sum(checker_vector(1,:,:),3)==sum(background));
-                    if(find(sum(checker_vector(2,idc(1):idc(end),:),3)==sum(color(1,:))))
-                        color = color(1,:);
+                % Se idx è precedente della prima tessera centrale:
+                %   > è la prima tessera? Allora guardiamo a destra
+                %   > non è la prima tessera? Allora guardiamo a sinistra
+                % Se idx è successivo all'ultima tessera centrale:
+                %   > è la prima l'ultima tessera? Allora guardiamo a sinistra
+                %   > non è l'ultima tessera? Allora guardiamo a destra
+                % Usiamo l'ordine dei colori per determinare l'ordinamento, i casi con due colori a sinistra 
+                % o a destra sono banali e sono stati gestiti precedentemente.
+                if(idx < labs(1))
+                    if(idx~=1)
+                        color = name2code(obj_chess(order(1,idx-1)).name);                   
+                        % Sfruttiamo il checker vector, se i colori sono invertiti rispetto all'ordine originale allora
+                        % abbiamo un riflesso primario, altrimenti abbiamo un riflesso secondario. 
+                        check = checker_vector(2,:,:);
+                        ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                        jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
+                        if(jj>ii)
+                             obj_chess(l).chess(i).type = types(2);
+                        else
+                             obj_chess(l).chess(i).type = types(1);
+                        end
                     else
-                        color = color(2,:);
+                        color = name2code(obj_chess(order(1,idx+1)).name);
+                        check = checker_vector(2,:,:);
+                        ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                        jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
+                        if(jj<ii)
+                             obj_chess(l).chess(i).type = types(2);
+                        else
+                             obj_chess(l).chess(i).type = types(1);
+                        end
                     end
-                    % Sfruttiamo il checker vector, se i colori sono invertiti rispetto all'ordine originale allora
-                    % abbiamo un riflesso primario, altrimenti abbiamo un riflesso secondario. 
-                    check = checker_vector(2,:,:);
-                    ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                    jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
-                    if(jj>ii)
-                         obj_chess(l).chess(i).type = types(2);
+                elseif(idx > labs(end))
+                    if (idx~=size(order,2))
+                        color = name2code(obj_chess(order(1,idx+1)).name);
+                        check = checker_vector(2,:,:);
+                        ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                        jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
+                        if(jj<ii)
+                             obj_chess(l).chess(i).type = types(2);
+                        else
+                             obj_chess(l).chess(i).type = types(1);
+                        end
                     else
-                         obj_chess(l).chess(i).type = types(1);
-                    end                 
-                elseif(idx > labs(end) && idx~=size(order,2))
-                    color = name2code(obj_chess(order(1,idx+1)).name);
-                    background = name2code(obj_chess(order(1,idx+1)).chess(order(2,idx-1)).background);
-                    idc = find(sum(checker_vector(1,:,:),3)==sum(background));
-                    if(find(sum(checker_vector(2,idc(1):idc(end),:),3)==sum(color(1,:))))
-                        color = color(1,:);
-                    else
-                        color = color(2,:);
-                    end
-                    check = checker_vector(2,:,:);
-                    ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                    jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
-                    if(jj<ii)
-                         obj_chess(l).chess(i).type = types(2);
-                    else
-                         obj_chess(l).chess(i).type = types(1);
+                        color = name2code(obj_chess(order(1,idx-1)).name);
+                        check = checker_vector(2,:,:);
+                        ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                        jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
+                        if(jj>ii)
+                             obj_chess(l).chess(i).type = types(2);
+                        else
+                             obj_chess(l).chess(i).type = types(1);
+                        end 
                     end
                 end
             end 
@@ -288,128 +368,169 @@ maskL1 = false(size(fuse,1),size(fuse,2));
 maskL2 = false(size(fuse,1),size(fuse,2));
 maskR1 = false(size(fuse,1),size(fuse,2));
 maskR2 = false(size(fuse,1),size(fuse,2));
+isC = false;
+isL1 = false;
+isL2 = false;
+isR1 = false;
+isR2 = false;
 
 for i=1:size(obj_chess,1)
     for j=1:size(obj_chess(i).chess,2) %Inew = I.*repmat(M,[1,1,3]);
         if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
             maskL2 = (maskL2 | obj_chess(i).chess(j).mask);
+            isL2 = true;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Primary'))
             maskR1 = maskR1 | obj_chess(i).chess(j).mask;
+            isR1 = true;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Left') && strcmp(obj_chess(i).chess(j).type,'Primary'))
             maskL1 = maskL1 | obj_chess(i).chess(j).mask;
+            isL1 = true;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Right') && strcmp(obj_chess(i).chess(j).type,'Secondary'))
             maskR2 = maskR2 | obj_chess(i).chess(j).mask;
+            isR2 = true;
         end
         if(strcmp(obj_chess(i).chess(j).position,'Center'))
             maskC = maskC | obj_chess(i).chess(j).mask;
+            isC  = true;
         end
     end
 end
 %% Rifinitura Maschere
-% Conto quante linee ci devono essere in funzione dei colori
-idxLinesCenter = find(strcmp(label(3,:),positions(2)));
-numLinesCenter = size(idxLinesCenter,2)+1;
-idxLinesLeftSec = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(2)));
-numLinesLeftSec = size(idxLinesLeftSec,2)+1;
-idxLinesLeftPri = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(1)));
-numLinesLeftPri = size(idxLinesLeftPri,2)+1;
-idxLinesRightSec = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(2)));
-numLinesRightSec = size(idxLinesRightSec,2)+1;
-idxLinesRightPri = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(1)));
-numLinesRightPri = size(idxLinesRightPri,2)+1;
-
-LinesCenter = findLines(idxLinesCenter,  obj_chess, order);
-LinesCenter = mergeNearestLines(LinesCenter, numLinesCenter, size(maskC));
-gap  = false(size(fuse,1),size(fuse,2));
-figure, imshow(gap)
-for i=1:size(LinesCenter,2)
-    gap = gap | line2image(LinesCenter{i},size(maskC));
+if ( isC )
+    % Conto quante linee ci devono essere in funzione dei colori
+    idxLinesCenter = find(strcmp(label(3,:),positions(2)));
+    numLinesCenter = size(idxLinesCenter,2)+1;
+    % Uso il numero teorico di linee per unire quelle troppo vicine
+    LinesCenter = findLines(idxLinesCenter,  obj_chess, order);
+    LinesCenter = mergeNearestLines(LinesCenter, numLinesCenter, size(maskC));
+    gap  = false(size(fuse,1),size(fuse,2));
+    for i=1:size(LinesCenter,2)
+        gap = gap | line2image(LinesCenter{i},size(maskC));
+    end
+    % Separo le checkerboard appartenenti ad una stessa tipologia di immagine
+    gap = imdilate(gap,strel('disk',3));
+    maskC = maskC & ~gap;
+    maskC = imopen(maskC,strel('square',3));
+    
 end
-gap = imdilate(gap,strel('disk',3));
-maskC = maskC & ~gap;
-maskC = imopen(maskC,strel('square',3));
+if ( isL2 )
+    
+    idxLinesLeftSec = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(2)));
+    numLinesLeftSec = size(idxLinesLeftSec,2)+1;
+    LinesLeftSec = findLines(idxLinesLeftSec,  obj_chess, order);
+    LinesLeftSec = mergeNearestLines(LinesLeftSec, numLinesLeftSec, size(maskC));
+    gap  = false(size(fuse,1),size(fuse,2));
+    for i=1:size(LinesLeftSec,2)
+        gap = gap | line2image(LinesLeftSec{i},size(maskC));
+    end
+    gap = imdilate(gap,strel('disk',3));
+    maskL2 = maskL2 & ~gap;
+    maskL2 = imopen(maskL2,strel('square',3));
 
-LinesLeftSec = findLines(idxLinesLeftSec,  obj_chess, order);
-LinesLeftSec = mergeNearestLines(LinesLeftSec, numLinesLeftSec, size(maskC));
-gap  = false(size(fuse,1),size(fuse,2));
-for i=1:size(LinesLeftSec,2)
-    gap = gap | line2image(LinesLeftSec{i},size(maskC));
 end
-gap = imdilate(gap,strel('disk',3));
-maskL2 = maskL2 & ~gap;
-maskL2 = imopen(maskL2,strel('square',3));
-
-LinesLeftPri = findLines(idxLinesLeftPri,  obj_chess, order);
-LinesLeftPri = mergeNearestLines(LinesLeftPri, numLinesLeftPri, size(maskC));
-gap  = false(size(fuse,1),size(fuse,2));
-for i=1:size(LinesLeftPri,2)
-    gap = gap | line2image(LinesLeftPri{i},size(maskC));
+if ( isL1 )
+    
+    idxLinesLeftPri = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(1)));
+    numLinesLeftPri = size(idxLinesLeftPri,2)+1;
+    LinesLeftPri = findLines(idxLinesLeftPri,  obj_chess, order);
+    LinesLeftPri = mergeNearestLines(LinesLeftPri, numLinesLeftPri, size(maskC));
+    gap  = false(size(fuse,1),size(fuse,2));
+    for i=1:size(LinesLeftPri,2)
+        gap = gap | line2image(LinesLeftPri{i},size(maskC));
+    end
+    gap = imdilate(gap,strel('disk',3));
+    maskL1 = maskL1 & ~gap;
+    maskL1 = imopen(maskL1,strel('square',3));
+    
 end
-gap = imdilate(gap,strel('disk',3));
-maskL1 = maskL1 & ~gap;
-maskL1 = imopen(maskL1,strel('square',3));
-
-LinesRightSec = findLines(idxLinesRightSec,  obj_chess, order);
-LinesRightSec = mergeNearestLines(LinesRightSec, numLinesRightSec, size(maskC));
-gap  = false(size(fuse,1),size(fuse,2));
-for i=1:size(LinesRightSec,2)
-    gap = gap | line2image(LinesRightSec{i},size(maskC));
+if ( isR2 )
+    
+    idxLinesRightSec = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(2)));
+    numLinesRightSec = size(idxLinesRightSec,2)+1;
+    LinesRightSec = findLines(idxLinesRightSec,  obj_chess, order);
+    LinesRightSec = mergeNearestLines(LinesRightSec, numLinesRightSec, size(maskC));
+    gap  = false(size(fuse,1),size(fuse,2));
+    for i=1:size(LinesRightSec,2)
+        gap = gap | line2image(LinesRightSec{i},size(maskC));
+    end
+    gap = imdilate(gap,strel('disk',3));
+    maskR2 = maskR2 & ~gap;
+    maskR2 = imopen(maskR2,strel('square',3));
+    
 end
-gap = imdilate(gap,strel('disk',3));
-maskR2 = maskR2 & ~gap;
-maskR2 = imopen(maskR2,strel('square',3));
-
-LinesRightPri = findLines(idxLinesRightPri,  obj_chess, order);
-LinesRightPri = mergeNearestLines(LinesRightPri, numLinesRightPri, size(maskC));
-gap  = false(size(fuse,1),size(fuse,2));
-for i=1:size(LinesRightPri,2)
-    gap = gap | line2image(LinesRightPri{i},size(maskC));
+if ( isR1 )
+    
+    idxLinesRightPri = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(1)));
+    numLinesRightPri = size(idxLinesRightPri,2)+1;
+    LinesRightPri = findLines(idxLinesRightPri,  obj_chess, order);
+    LinesRightPri = mergeNearestLines(LinesRightPri, numLinesRightPri, size(maskC));
+    gap  = false(size(fuse,1),size(fuse,2));
+    for i=1:size(LinesRightPri,2)
+        gap = gap | line2image(LinesRightPri{i},size(maskC));
+    end
+    gap = imdilate(gap,strel('disk',3));
+    maskR1 = maskR1 & ~gap;
+    maskR1 = imopen(maskR1,strel('square',3));
+    
 end
-gap = imdilate(gap,strel('disk',3));
-maskR1 = maskR1 & ~gap;
-maskR1 = imopen(maskR1,strel('square',3));
 %% Ripulisco maschere da oggetti piccoli
-statsL2 = cell2mat(struct2cell(regionprops(maskC,'Area')));
-maskL2 = bwareaopen(maskL2,round(0.1*(mean(statsL2)-std(statsL2))));
-figure, imshow(maskL2);
-statsL1 = cell2mat(struct2cell(regionprops(maskL1,'Area')));
-maskL1 = bwareaopen(maskL1,round(0.1*(mean(statsL1)-std(statsL1))));
-figure, imshow(maskL1);
-statsC = cell2mat(struct2cell(regionprops(maskC,'Area')));
-maskC = bwareaopen(maskC,round(0.1*(mean(statsC)-std(statsC))));
-figure, imshow(maskC);
-statsR1 = cell2mat(struct2cell(regionprops(maskC,'Area')));
-maskR1 = bwareaopen(maskR1,round(0.1*(mean(statsR1)-std(statsR1))));
-figure, imshow(maskR1);
-statsR2 = cell2mat(struct2cell(regionprops(maskR2,'Area')));
-maskR2 = bwareaopen(maskR2,round(0.1*(mean(statsR2)-std(statsR2))));
-figure, imshow(maskR2);
+if ( isL2 )
+    statsL2 = cell2mat(struct2cell(regionprops(maskL2,'Area')));
+    maskL2 = bwareaopen(maskL2,round(0.1*(mean(statsL2)-std(statsL2))));
+    figure, imshow(maskL2);
+end
+if ( isL1 )
+    statsL1 = cell2mat(struct2cell(regionprops(maskL1,'Area')));
+    maskL1 = bwareaopen(maskL1,round(0.1*(mean(statsL1)-std(statsL1))));
+    figure, imshow(maskL1);
+end
+if ( isC )
+    statsC = cell2mat(struct2cell(regionprops(maskC,'Area')));
+    maskC = bwareaopen(maskC,round(0.1*(mean(statsC)-std(statsC))));
+    figure, imshow(maskC);
+end
+if ( isR1 )
+    statsR1 = cell2mat(struct2cell(regionprops(maskR1,'Area')));
+    maskR1 = bwareaopen(maskR1,round(0.1*(mean(statsR1)-std(statsR1))));
+    figure, imshow(maskR1);
+end
+if ( isR2 )
+    statsR2 = cell2mat(struct2cell(regionprops(maskR2,'Area')));
+    maskR2 = bwareaopen(maskR2,round(0.1*(mean(statsR2)-std(statsR2))));
+    figure, imshow(maskR2);
+end
 %% Calcolo convexhull dei riflessi: controllare se è necessario fare sta cosa
 for k=1:5
     switch(k)
         case 1
+            if (~isC)
+                continue;
+            end
             mask = maskC;
         case 2
+            if (~isL1)
+                continue;
+            end
             mask = maskL1;
         case 3
+            if (~isL2)
+                continue;
+            end 
             mask = maskL2;
         case 4
+            if (~isR1)
+                continue;
+            end 
             mask = maskR1;
         case 5
+            if (~isR2)
+                continue;
+            end 
             mask = maskR2;
     end
-%     idx = find(mask == 1);
-%     [idx,idy]=ind2sub(size(mask),idx);
-%     j = boundary(idx,idy,0.1); % Parametro
-%     maskI = poly2mask(idy(j),idx(j), size(mask,1), size(mask,2));
-%     DilatedMask = imdilate(maskI,strel('rectangle',[3,20]));
-%     idx = find(maskI == 1);
-%     [idx,idy]=ind2sub(size(mask),idx);
-%     maskI = false(size(maskI));
-%     maskI(min(idx):max(idx),min(idy):max(idy)) = DilatedMask(min(idx):max(idx),min(idy):max(idy));
     maskI = bwconvhull(mask);
     switch(k)
         case 1
@@ -437,77 +558,126 @@ for i=1:size(obj_chess,1)
 end
 close all;
 %% Full Mask
-FullMask = maskCI+maskL1I+maskL2I+maskR1I+maskR2I;
-BlurredMask = imgaussfilt(FullMask,10);
+FullMask  = false(size(fuse,1),size(fuse,2));
+if ( isL2 )
+    FullMask = FullMask | maskL2I;
+end
+if ( isL1 )
+    FullMask = FullMask | maskL1I;
+end
+if ( isC )
+    FullMask = FullMask | maskCI;
+end
+if ( isR1 )
+    FullMask = FullMask | maskR1I;
+end
+if ( isR2 )
+    FullMask = FullMask | maskR2I;
+end
+BlurredMask = imgaussfilt(double(FullMask),10);
 %% Fissa il centro degli assi
 R = im2double(I(:,:,1)); G = im2double(I(:,:,2)); B = im2double(I(:,:,3));
 MINRGB = min(R,G); MINRGB = min(MINRGB,B);
 MINMASK = false(size(MINRGB));
 for i=1:size(obj_chess,1)
     for j=1:size(obj_chess(i).chess,2) 
-        if(~strcmp(obj_chess(i).name,'yellow'))
             if(~strcmp(obj_chess(i).chess(j).background,'Black'))
                 tmp = obj_chess(i).chess(j).mask & obj_chess(i).color_mask;
                 MINMASK = MINMASK | tmp;
             end
-        end
     end
 end
 MINRGB = imgaussfilt((MINRGB+MINMASK).*BlurredMask,2);
 T = graythresh(MINRGB);
 bw = im2bw(MINRGB,T);
-RIGHTMASK = bwareaopen(bw, 2*Threshold); % Parametro
+area = cell2mat(struct2cell(regionprops(bwconncomp(bw,8),'Area')));
+RIGHTMASK = bwareaopen(bw, round(0.3*mean(area)));
+RIGHTMASK = imopen(RIGHTMASK,strel('square',10));
 for i=1:3
     switch(i)
         case 1
+            if (~isC)
+                continue;
+            end
             mask = maskCI;
         case 2
-            mask = maskL1I|maskL2I;
+            if (~isL1 && ~isL2)
+                continue;
+            end
+            mask = false(size(MINRGB));
+            if ( isL1 )
+                mask = mask | maskL1I;
+            end
+            if ( isL2 )
+                mask = mask | maskL1I;
+            end
         case 3
-            mask = maskR1I|maskR2I;
+            if (~isR1 && ~isR2)
+                continue;
+            end
+            mask = false(size(MINRGB));
+            if ( isR1 )
+                mask = mask | maskR1I;
+            end
+            if ( isR2 )
+                mask = mask | maskR2I;
+            end
     end
-%     idx = find(RIGHTMASK.*mask == 1);
-%     [idx,idy]=ind2sub(size(RIGHTMASK),idx);
-%     j = boundary(idx,idy,0.1); % Parametro
-     RIGHTMASK = RIGHTMASK | bwconvhull(RIGHTMASK.*mask);%poly2mask(idy(j),idx(j), size(RIGHTMASK,1), size(RIGHTMASK,2));
+     RIGHTMASK = RIGHTMASK | bwconvhull(RIGHTMASK.*mask);
 end
 LEFTMASK = FullMask-RIGHTMASK;
 LEFTMASK(LEFTMASK<0) = 0;
 LEFTMASK = imopen(LEFTMASK,strel('rectangle',[10,30]));
 LEFTMASK = imclose(LEFTMASK,strel('square',20));
-CC = bwconncomp(LEFTMASK,4); CC_dim = zeros(1,size(CC.PixelIdxList,2));
-for i=1:size(CC.PixelIdxList,2)
-    CC_dim(i) = size(CC.PixelIdxList{i},1);
-end
-LEFTMASK = false(size(LEFTMASK));
-for i=1:3 % Controllare questa operazione: l'idea è, siccome avrò sempre almeno tre blob prendi quelli più grandi così filtri il rumore, questo vale se tutti i riflessi creano un unico blob, necessaria chiusura, perchè 10?
-    idx = find(CC_dim == max(CC_dim));
-    LEFTMASK(CC.PixelIdxList{idx}) = 1;
-    CC_dim(idx) = 0;
-end
+area = cell2mat(struct2cell(regionprops(bwconncomp(LEFTMASK,8),'Area')));
+LEFTMASK = bwareaopen(LEFTMASK, round(0.3*mean(area)));
 left = imdilate(edge(LEFTMASK),strel('disk',3));
 right = imdilate(edge(RIGHTMASK),strel('disk',3));
 center_axis = left & right;
-left_center_axis = center_axis.*(maskL1I|maskL2I);
+
+imshow(I); hold on;
+v_legend = [];
+mask = false(size(MINRGB));
+if ( isL1 ) 
+    mask = mask | maskL1I;
+end
+if ( isL2 ) 
+    mask = mask | maskL2I;
+end
+left_center_axis = center_axis.*mask;
 idx = find(left_center_axis == 1);
-[idy,idx] = ind2sub(size(RIGHTMASK),idx);
-[left_fitresult, left_gof] = createLineInv(idy,idx,size(FullMask));
+if ( ~isempty(idx) )
+    [idy,idx] = ind2sub(size(RIGHTMASK),idx);
+    [left_fitresult, left_gof] = createLineInv(idy,idx,size(FullMask));
+    plot(left_fitresult,'b'); 
+    v_legend = [v_legend, 'left axis'];
+end
 
-right_center_axis = center_axis.*(maskR1I|maskR2I);
+mask = false(size(MINRGB));
+if ( isL1 ) 
+    mask = mask | maskR1I;
+end
+if ( isL2 ) 
+    mask = mask | maskR2I;
+end
+right_center_axis = center_axis.*mask;
 idx = find(right_center_axis == 1);
-[idy,idx] = ind2sub(size(RIGHTMASK),idx);
-[right_fitresult, right_gof] = createLineInv(idy,idx,size(FullMask));
+if ( ~isempty(idx) )
+    [idy,idx] = ind2sub(size(RIGHTMASK),idx);
+    [right_fitresult, right_gof] = createLineInv(idy,idx,size(FullMask));
+    plot(right_fitresult,'r'); 
+    v_legend = [v_legend, 'right axis'];
+end
 
-mid_center_axis = center_axis.*(maskCI);
-idx = find(mid_center_axis == 1);
-[idy,idx] = ind2sub(size(RIGHTMASK),idx);
-[mid_fitresult, mid_gof] = createLineInv(idy,idx,size(FullMask));
-
-imshow(I); hold on; 
-plot(left_fitresult,'b'); 
-plot(right_fitresult,'r'); 
-plot(mid_fitresult, 'y');
-legend('left axis', 'right axis', 'center axis');
+if ( isC )
+    mid_center_axis = center_axis.*(maskCI);
+    idx = find(mid_center_axis == 1);
+    [idy,idx] = ind2sub(size(RIGHTMASK),idx);
+    [mid_fitresult, mid_gof] = createLineInv(idy,idx,size(FullMask));
+    plot(mid_fitresult, 'y');
+    v_legend = [v_legend, 'center axis'];
+end
+legend(v_legend);
 %% Corner
 cymk = rgb2cmyk(I);
 Cyano = im2double(cymk(:,:,1));
@@ -532,6 +702,9 @@ verticalCell = cell(5,20);
 for i=1:5 % Non sei indipendente dal numero di riflessi
     switch (i)
         case 1
+            if ( ~isC )
+                continue;
+            end
             % Center Real Reflection
             idl = find(strcmp(label(3,:),'Center') & strcmp(label(4,:),'Real'));
             grid_pos = 'Center';
@@ -543,17 +716,28 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
             toTakeLeft = true;
             toTakeRight = true;
         case 2
+            if ( ~isL1 )
+                continue;
+            end
             % Left Primary Reflection
             idl = find(strcmp(label(3,:),'Left') & strcmp(label(4,:),'Primary'));
             grid_pos = 'Left';
             grid_typ = 'Primary';
             maskI = maskL1I;
             mask = maskL1;
-            dilateLeft = 15;
             dilateRight = 12;
-            toTakeLeft = false;
             toTakeRight = true;
+            if ( isL2 )
+                dilateLeft = 15;
+                toTakeLeft = false;
+            else
+                dilateLeft = 12;
+                toTakeLeft = true;
+            end 
         case 3
+            if ( ~isL2 )
+                continue;
+            end
             % Left Secondary Reflection
             idl = find(strcmp(label(3,:),'Left') & strcmp(label(4,:),'Secondary'));
             grid_pos = 'Left';
@@ -565,6 +749,9 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
             toTakeRight  = false;
             toTakeLeft = false;
         case 4
+            if ( ~isR1 )
+                continue;
+            end
             % Right Primary Reflection
             idl = find(strcmp(label(3,:),'Right') & strcmp(label(4,:),'Primary'));
             grid_pos = 'Right';
@@ -572,10 +759,18 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
             maskI = maskR1I;
             mask = maskR1;
             dilateLeft = 12;
-            dilateRight = 15;
-            toTakeRight  = false;
             toTakeLeft = true;
+            if ( isR2 )
+               dilateRight = 15; 
+               toTakeRight  = false;
+            else
+               dilateRight = 12; 
+               toTakeRight  = true;  
+            end
         case 5
+            if ( ~isR2 )
+                continue;
+            end
             % Right Secondary Reflection
             idl = find(strcmp(label(3,:),'Right') & strcmp(label(4,:),'Secondary'));
             grid_pos = 'Right';
@@ -645,17 +840,7 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
                 if(~isempty(lines))
                     [liney,linex] = ind2sub(size(GRIDv),lines); 
                     [linefitresult, ~] = createLineInv(liney, linex, size(GRIDv));
-%                    coeffs = coeffvalues(linefitresult);
                     image_line = image_line | line2image(linefitresult,size(GRIDv));
-                    % Sostituire con funzione line2image
-%                     x = 1:0.001:size(GRIDv,2);
-%                     y = floor(polyval(coeffs,x));
-%                     x = floor(x);
-%                     x(y<1 | y>size(GRIDv,1)) = [];
-%                     y(y<1 | y>size(GRIDv,1)) = [];
-%                     for count = 1:size(x,2)
-%                         image_line(y(count),x(count)) = 1;
-%                     end
                     plot(linefitresult);
                     verticalCell{i,idx_line} = linefitresult;
                     idx_line = idx_line + 1;
@@ -678,15 +863,6 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
             [liney,linex] = ind2sub(size(GRIDv),lines); 
             [linefitresult, ~] = createLineInv(liney, linex, size(GRIDv));
             image_line = image_line | line2image(linefitresult,size(GRIDv));
-%             coeffs = coeffvalues(linefitresult);
-%             x = 1:0.001:size(GRIDv,2);
-%             y = floor(polyval(coeffs,x));
-%             x = floor(x);
-%             x(y<1 | y>size(GRIDv,1)) = [];
-%             y(y<1 | y>size(GRIDv,1)) = [];
-%             for count = 1:size(x,2)
-%                 image_line(y(count),x(count)) = 1;
-%             end
             plot(linefitresult);
             verticalCell{i,idx_line} = linefitresult;
             idx_line = idx_line + 1;
@@ -774,18 +950,33 @@ end
 for k=1:5
     switch(k)
         case 1
+            if ( ~isC )
+                continue;
+            end
             mask = maskCI;
             idx = find(strcmp(label(3,:),positions(2)));
         case 2
+            if ( ~isL1 )
+                continue;
+            end
             mask = maskL1I;
             idx = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(1)));
         case 3
+            if ( ~isL2 )
+                continue;
+            end
             mask = maskL2I;
             idx = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(2)));
         case 4
+            if ( ~isR1 )
+                continue;
+            end
             mask = maskR1I;
             idx = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(1)));
         case 5
+            if ( ~isR2 )
+                continue;
+            end
             mask = maskR2I;
             idx = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(2)));
     end
@@ -897,45 +1088,26 @@ figure, imshow(checher_vector_with_axis);
 % La checker è suddivisa verticalmente in 4 quadrati, ciò significa 5 punti compresi quelli di intersezione
 % Ogni quadrante rappresenta 45°, quindi ad ogni punto corrisponde un angolo di 9°
 for l=1:size(obj_chess,1)
-    white_chess = []; black_chess = [];
-    for k =1:size(obj_chess(l).chess,2)
-        if(strcmp(obj_chess(l).chess(k).background,'White')==1)
-            white_chess = [white_chess, obj_chess(l).chess(k)];
-        else
-            black_chess = [black_chess, obj_chess(l).chess(k)];
-        end
-    end  
-    for count=1:2
-        switch(count)
-            case 1
-                curr_chess = white_chess;
-            case 2
-                curr_chess = black_chess;
-        end
-        if(isempty(curr_chess))
-            continue;
-        end
-        for i=1:size(obj_chess(l).chess(1).intersections_x,1)
-            for j=1:size(obj_chess(l).chess(1).intersections_x,2)
-                imshow(I); hold on;
-                vect_x = []; 
-                vect_y = []; 
-                for k =1:size(curr_chess,2)
-                    axis_distance = axisdistance(obj_chess(l).name,curr_chess(k).background,checher_vector_with_axis);
-                    adjusted_distance = axis_distance-1*sign(axis_distance); % Se positivo togliamo 1, se negativo aggiungiamo 1, le tessere gialle e rosse stanno a distanza zero.
-                    if(sign(axis_distance) >0)
-                        adjusted_offset = (j-1)*11.25;
-                    else
-                        adjusted_offset = (j-size(curr_chess(k).intersections_x,2))*11.25;
-                    end
-                    angle = adjusted_distance*45 + adjusted_offset
-                    h = i*2.6
-                    vect_x = [vect_x, curr_chess(k).intersections_x(i,j)];
-                    vect_y = [vect_y, curr_chess(k).intersections_y(i,j)];
+    for i=1:size(obj_chess(l).chess(1).intersections_x,1)
+        for j=1:size(obj_chess(l).chess(1).intersections_x,2)
+            imshow(I); hold on;
+            vect_x = [];
+            vect_y = [];
+            for k =1:size(obj_chess(l).chess,2)
+                axis_distance = axisdistance(obj_chess(l).name,obj_chess(l).chess(k).background,checher_vector_with_axis);
+                adjusted_distance = axis_distance-1*sign(axis_distance); % Se positivo togliamo 1, se negativo aggiungiamo 1, le tessere gialle e rosse stanno a distanza zero.
+                if(sign(axis_distance) >0)
+                    adjusted_offset = (j-1)*11.25;
+                else
+                    adjusted_offset = (j-size(obj_chess(l).chess(k).intersections_x,2))*11.25;
                 end
-                scatter(vect_x(:),vect_y(:)); hold off
-                pause
+                angle = adjusted_distance*45 + adjusted_offset
+                h = i*2.6
+                vect_x = [vect_x, obj_chess(l).chess(k).intersections_x(i,j)];
+                vect_y = [vect_y, obj_chess(l).chess(k).intersections_y(i,j)];
             end
+            scatter(vect_x(:),vect_y(:)); hold off
+            pause
         end
     end
 end
