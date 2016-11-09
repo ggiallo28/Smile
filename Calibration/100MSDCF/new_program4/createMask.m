@@ -188,6 +188,7 @@ obj = objBlobs(band);
 split = sum(BW);
 split = find(split~=0);
 if size(split,2) == 0
+    obj.isEmpty = true;
     return;
 end
 x = []; x(1,1) = split(1); k = 1;
@@ -709,6 +710,7 @@ end
 % end
 maskedRGBImage(repmat(~obj.color_mask ,[1 1 3]))= 0;
 obj.masked_rgb = im2uint8(maskedRGBImage);
+obj.isEmpty = false;
 disp('ciao');
 close all;
 

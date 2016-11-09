@@ -180,10 +180,10 @@ end
 
 %% Calcolo intervallo
 hist_size = size(h,1);
-if(size(output_peak,2)>5)
-    [output_peak, output_minima_low, output_minima_high , output_mid, hist_size] = findlocalminima(I,mpd+1,windowSize,refine, isPeriodic);
-    return;
-end
+% if(size(output_peak,2)>5)
+%     [output_peak, output_minima_low, output_minima_high , output_mid, hist_size] = findlocalminima(I,mpd+1,windowSize,refine, isPeriodic);
+%     return;
+% end
 assert(size(output_peak,2) == 4 | size(output_peak,2) == 5);
 if(size(output_peak,2)==5)
     output_mid(1) = output_peak(1)+0.5*(output_peak(2)-output_peak(1));

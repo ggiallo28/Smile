@@ -2,8 +2,8 @@ close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
 checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
-orig = imread(['foto/DSC0014',num2str(7),'.JPG']);
-orig_bg = imread(['foto/DSC0014',num2str(8),'.JPG']);
+orig = imread(['foto/Testato/DSC0012',num2str(3),'_C1.JPG']);
+orig_bg = imread(['foto/Testato/DSC0012',num2str(4),'_N1.JPG']);
 %% Normalizzazione
 figure, [O, BB] = imcrop(orig);
 R = im2double(O(:,:,1));
@@ -26,10 +26,10 @@ K(:,:,2) = Gt.*(2-L);
 K(:,:,3) = Bt.*(2-L);
 I_BG = im2uint8(K);
 %% Parametri
-confidence = 2.5;
+confidence = 2.8;
 [r,c] = size(I); Threshold = round(r*c/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
 mpd = 15;
-windowSize = 5;
+windowSize = 6;
 %% Background Subtraction
 lab_image_bg = rgb2lab(I_BG);
 lab_imgae_fg = rgb2lab(I);
@@ -208,13 +208,15 @@ fuse = colors_fuse+repmat(BW,[1 1 3]);
 imshow([I;fuse]); hold on;
 for l=1:size(obj_chess,1)
     obj = obj_chess(l);
-    for i = 1:size(obj.chess,2)
-        for j=1:size(obj.chess(i).center_x,2)
-            for k=1:size(obj.chess(i).center_x,1)
-                scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
-            end
-            plot(obj.chess(i).v_lines_centroid{j});
-        end       
+    if( ~obj.isEmpty )
+        for i = 1:size(obj.chess,2)
+            for j=1:size(obj.chess(i).center_x,2)
+                for k=1:size(obj.chess(i).center_x,1)
+                    scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
+                end
+                plot(obj.chess(i).v_lines_centroid{j});
+            end       
+        end
     end
 end
 hold off;
@@ -231,8 +233,10 @@ types = [{'Primary'} {'Secondary'} {'Real'}];
 order = []; k =1;
 % Order Vector of chess
 for l=1:size(obj_chess,1)
-    for i = 1:size(obj_chess(l).chess,2)
-        order = [order,[l;i;obj_chess(l).chess(i).centroid(1)]]; k = k+1;
+    if ( ~obj_chess(l).isEmpty )
+        for i = 1:size(obj_chess(l).chess,2)
+            order = [order,[l;i;obj_chess(l).chess(i).centroid(1)]]; k = k+1;
+        end
     end
 end
 % Find Objects Position
@@ -240,25 +244,29 @@ for l=1:size(obj_chess,1)
     left = 0;
     right = 0;
     arr = [];
-    for i = 1:size(obj_chess(l).chess,2)
-        v(1) = sum(sum(obj_chess(l).chess(i).mask&maskLeft));
-        v(2) = sum(sum(obj_chess(l).chess(i).mask&maskCenter));
-        v(3) = sum(sum(obj_chess(l).chess(i).mask&maskRight));
-        idx = find(v==max(v));
-        obj_chess(l).chess(i).position = positions(idx);
-        if idx==2
-            obj_chess(l).chess(i).type =types(3);
+    if ( ~obj_chess(l).isEmpty )
+        for i = 1:size(obj_chess(l).chess,2)
+            v(1) = sum(sum(obj_chess(l).chess(i).mask&maskLeft));
+            v(2) = sum(sum(obj_chess(l).chess(i).mask&maskCenter));
+            v(3) = sum(sum(obj_chess(l).chess(i).mask&maskRight));
+            idx = find(v==max(v));
+            obj_chess(l).chess(i).position = positions(idx);
+            if idx==2
+                obj_chess(l).chess(i).type =types(3);
+            end
         end
     end
 end
 % Adds label
 label = cell(4,k-1); k =1;
 for l=1:size(obj_chess,1)
-    for i = 1:size(obj_chess(l).chess,2)
-        label(1,k) = cellstr(obj_chess(l).name);
-        label(2,k) = cellstr(obj_chess(l).chess(i).background);
-        label(3,k) = cellstr(obj_chess(l).chess(i).position);
-        k = k+1;
+    if ( ~obj_chess(l).isEmpty )
+        for i = 1:size(obj_chess(l).chess,2)
+            label(1,k) = cellstr(obj_chess(l).name);
+            label(2,k) = cellstr(obj_chess(l).chess(i).background);
+            label(3,k) = cellstr(obj_chess(l).chess(i).position);
+            k = k+1;
+        end
     end
 end
 % Ordering of chess
@@ -575,13 +583,15 @@ for k=1:5
 end
 %% Calcolo Convexhull tessere singole
 for i=1:size(obj_chess,1)
-    for j=1:size(obj_chess(i).chess,2)
-        cut_x = obj_chess(i).bbox_x(j,:);
-        cut_y = obj_chess(i).bbox_y(j,:); 
-        obj_chess(i).chess(j).ch_mask = false(size(fuse,1),size(fuse,2));
-        mask = imdilate(bwconvhull(obj_chess(i).chess(j).mask),strel('square',3));
-        obj_chess(i).chess(j).ch_mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)) = mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2));     
-        figure, imshowpair(obj_chess(i).chess(j).ch_mask,rgb2gray(I),'falsecolor');
+    if ( ~obj_chess(i).isEmpty )
+        for j=1:size(obj_chess(i).chess,2)
+            cut_x = obj_chess(i).bbox_x(j,:);
+            cut_y = obj_chess(i).bbox_y(j,:); 
+            obj_chess(i).chess(j).ch_mask = false(size(fuse,1),size(fuse,2));
+            mask = imdilate(bwconvhull(obj_chess(i).chess(j).mask),strel('square',3));
+            obj_chess(i).chess(j).ch_mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)) = mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2));     
+            figure, imshowpair(obj_chess(i).chess(j).ch_mask,rgb2gray(I),'falsecolor');
+        end
     end
 end
 close all;
@@ -619,7 +629,7 @@ MINRGB = imgaussfilt((MINRGB+MINMASK).*BlurredMask,2);
 T = graythresh(MINRGB);
 bw = im2bw(MINRGB,T);
 area = cell2mat(struct2cell(regionprops(bwconncomp(bw,8),'Area')));
-RIGHTMASK = bwareaopen(bw, round(0.3*mean(area)));
+RIGHTMASK = bwareaopen(bw, round(0.13*mean(area))); % parametro
 RIGHTMASK = imopen(RIGHTMASK,strel('square',10));
 for i=1:3
     switch(i)
@@ -637,7 +647,7 @@ for i=1:3
                 mask = mask | maskL1I;
             end
             if ( isL2 )
-                mask = mask | maskL1I;
+                mask = mask | maskL2I;
             end
         case 3
             if (~isR1 && ~isR2)
@@ -658,7 +668,7 @@ LEFTMASK(LEFTMASK<0) = 0;
 LEFTMASK = imopen(LEFTMASK,strel('rectangle',[10,30]));
 LEFTMASK = imclose(LEFTMASK,strel('square',20));
 area = cell2mat(struct2cell(regionprops(bwconncomp(LEFTMASK,8),'Area')));
-LEFTMASK = bwareaopen(LEFTMASK, round(0.3*mean(area)));
+LEFTMASK = bwareaopen(LEFTMASK, round(0.13*mean(area))); % parametro
 left = imdilate(edge(LEFTMASK),strel('disk',3));
 right = imdilate(edge(RIGHTMASK),strel('disk',3));
 center_axis = left & right;
@@ -682,10 +692,10 @@ if ( ~isempty(idx) )
 end
 
 mask = false(size(MINRGB));
-if ( isL1 ) 
+if ( isR1 ) 
     mask = mask | maskR1I;
 end
-if ( isL2 ) 
+if ( isR2 ) 
     mask = mask | maskR2I;
 end
 right_center_axis = center_axis.*mask;
@@ -1057,61 +1067,63 @@ end
 % numero di colonne, aggiungiamo zeri alle matrici che hanno un numero
 % inferiore di colonne
 for l=1:size(obj_chess,1)
-    v = zeros(1,size(obj_chess(l).chess,2));
-    for q=1:size(obj_chess(l).chess,2)
-       v(q) = size(obj_chess(l).chess(q).intersections_x,2); 
-    end
-    max_v = max(v);
-    for q=1:size(obj_chess(l).chess,2)
-        num_col = size(obj_chess(l).chess(q).intersections_x,2);
-        num_row = size(obj_chess(l).chess(q).intersections_x,1);
-        if(num_col<max_v)
-            obj_chess(l).chess(q).intersections_x = ...
-                [obj_chess(l).chess(q).intersections_x, zeros(num_row,max_v-num_col)];
-            obj_chess(l).chess(q).intersections_y = ...
-                [obj_chess(l).chess(q).intersections_y, zeros(num_row,max_v-num_col)];
+    if ( ~obj_chess(l).isEmpty )
+        v = zeros(1,size(obj_chess(l).chess,2));
+        for q=1:size(obj_chess(l).chess,2)
+           v(q) = size(obj_chess(l).chess(q).intersections_x,2); 
         end
-        % Allineo a sinistra o a destra in funzione del fatto che ho un elemento a sinistra o a destra.
-        % Ciò mi è utile per tenere tutti i punti compatti verso il centro
-        % di ciò che è visibile sulla checherboard.
-        % Per capire se ho un elemento a sinistra controllo che a sinistra
-        % ci sia una griglia dello stesso tipo e nella stessa posizione
-        % della corrente.
-        % Per capire se ho un elemento a destra faccio la medesima cosa
-        % guardando a destra.
-        % Se abbiamo una griglia sinistra e una griglia destra sto vedendo
-        % tutta la griglia corrente, quindi non ha importanza in che
-        % direzione shifto.
-        % Una volta che gli elementi sono stati allineati in questo modo è
-        % sufficiente flippare le matrici associate ai riflessi primari,
-        % unico caso in cui abbiamo un'inversione.
-        % Gli indici di riga/colonna rappresentano le associazioni, abbiamo
-        % degli zeri dove l'associazione non esiste poichè il punto non
-        % risulta visibile.
-        % LABEL: Colore Foreground, Colore Background, Posizione, Tipo
-        % ORDER: Indice nel vettore obj_chess, Indice Chess, Centroide
-        idl = find(order(1,:)==l);
-        idq = find(order(2,:)==q);
-        idx_order = intersect(idl,idq);
-        if(hasLeft(label,idx_order))
-          obj_chess(l).chess(q).intersections_x = ...
-              allignleftdouble(obj_chess(l).chess(q).intersections_x);
-          obj_chess(l).chess(q).intersections_y = ...
-              allignleftdouble(obj_chess(l).chess(q).intersections_y);
-        end
-        if(hasRight(label,idx_order))
-           obj_chess(l).chess(q).intersections_x = ...
-               allignrightdouble(obj_chess(l).chess(q).intersections_x);
-           obj_chess(l).chess(q).intersections_y = ...
-               allignrightdouble(obj_chess(l).chess(q).intersections_y);
-        end
-        % positions = [{'Left'} {'Center'} {'Right'}];
-        % types = [{'Primary'} {'Secondary'} {'Real'}];
-        if(strcmp(label(4,idx_order),types(1)))
-           obj_chess(l).chess(q).intersections_x = ...
-               fliplr(obj_chess(l).chess(q).intersections_x);
-           obj_chess(l).chess(q).intersections_y = ...
-               fliplr(obj_chess(l).chess(q).intersections_y);
+        max_v = max(v);
+        for q=1:size(obj_chess(l).chess,2)
+            num_col = size(obj_chess(l).chess(q).intersections_x,2);
+            num_row = size(obj_chess(l).chess(q).intersections_x,1);
+            if(num_col<max_v)
+                obj_chess(l).chess(q).intersections_x = ...
+                    [obj_chess(l).chess(q).intersections_x, zeros(num_row,max_v-num_col)];
+                obj_chess(l).chess(q).intersections_y = ...
+                    [obj_chess(l).chess(q).intersections_y, zeros(num_row,max_v-num_col)];
+            end
+            % Allineo a sinistra o a destra in funzione del fatto che ho un elemento a sinistra o a destra.
+            % Ciò mi è utile per tenere tutti i punti compatti verso il centro
+            % di ciò che è visibile sulla checherboard.
+            % Per capire se ho un elemento a sinistra controllo che a sinistra
+            % ci sia una griglia dello stesso tipo e nella stessa posizione
+            % della corrente.
+            % Per capire se ho un elemento a destra faccio la medesima cosa
+            % guardando a destra.
+            % Se abbiamo una griglia sinistra e una griglia destra sto vedendo
+            % tutta la griglia corrente, quindi non ha importanza in che
+            % direzione shifto.
+            % Una volta che gli elementi sono stati allineati in questo modo è
+            % sufficiente flippare le matrici associate ai riflessi primari,
+            % unico caso in cui abbiamo un'inversione.
+            % Gli indici di riga/colonna rappresentano le associazioni, abbiamo
+            % degli zeri dove l'associazione non esiste poichè il punto non
+            % risulta visibile.
+            % LABEL: Colore Foreground, Colore Background, Posizione, Tipo
+            % ORDER: Indice nel vettore obj_chess, Indice Chess, Centroide
+            idl = find(order(1,:)==l);
+            idq = find(order(2,:)==q);
+            idx_order = intersect(idl,idq);
+            if(hasLeft(label,idx_order))
+              obj_chess(l).chess(q).intersections_x = ...
+                  allignleftdouble(obj_chess(l).chess(q).intersections_x);
+              obj_chess(l).chess(q).intersections_y = ...
+                  allignleftdouble(obj_chess(l).chess(q).intersections_y);
+            end
+            if(hasRight(label,idx_order))
+               obj_chess(l).chess(q).intersections_x = ...
+                   allignrightdouble(obj_chess(l).chess(q).intersections_x);
+               obj_chess(l).chess(q).intersections_y = ...
+                   allignrightdouble(obj_chess(l).chess(q).intersections_y);
+            end
+            % positions = [{'Left'} {'Center'} {'Right'}];
+            % types = [{'Primary'} {'Secondary'} {'Real'}];
+            if(strcmp(label(4,idx_order),types(1)))
+               obj_chess(l).chess(q).intersections_x = ...
+                   fliplr(obj_chess(l).chess(q).intersections_x);
+               obj_chess(l).chess(q).intersections_y = ...
+                   fliplr(obj_chess(l).chess(q).intersections_y);
+            end
         end
     end
 end
@@ -1124,29 +1136,92 @@ figure, imshow(checher_vector_with_axis);
 % La checker è suddivisa verticalmente in 4 quadrati, ciò significa 5 punti compresi quelli di intersezione
 % Ogni quadrante rappresenta 45°, quindi ad ogni punto corrisponde un angolo di 9°
 for l=1:size(obj_chess,1)
-    for i=1:size(obj_chess(l).chess(1).intersections_x,1)
-        for j=1:size(obj_chess(l).chess(1).intersections_x,2)
-            imshow(I); hold on;
-            vect_x = [];
-            vect_y = [];
-            for k =1:size(obj_chess(l).chess,2)
-                axis_distance = axisdistance(obj_chess(l).name,obj_chess(l).chess(k).background,checher_vector_with_axis);
-                adjusted_distance = axis_distance-1*sign(axis_distance); % Se positivo togliamo 1, se negativo aggiungiamo 1, le tessere gialle e rosse stanno a distanza zero.
-                if(sign(axis_distance) >0)
-                    adjusted_offset = (j-1)*11.25;
-                else
-                    adjusted_offset = (j-size(obj_chess(l).chess(k).intersections_x,2))*11.25;
+    if ( ~obj_chess(l).isEmpty )
+        for i=1:size(obj_chess(l).chess(1).intersections_x,1)
+            for j=1:size(obj_chess(l).chess(1).intersections_x,2)
+                imshow(I); hold on;
+                vect_x = [];
+                vect_y = [];
+                for k =1:size(obj_chess(l).chess,2)
+                    axis_distance = axisdistance(obj_chess(l).name,obj_chess(l).chess(k).background,checher_vector_with_axis);
+                    adjusted_distance = axis_distance-1*sign(axis_distance); % Se positivo togliamo 1, se negativo aggiungiamo 1, le tessere gialle e rosse stanno a distanza zero.
+                    if(sign(axis_distance) >0)
+                        adjusted_offset = (j-1)*11.25;
+                    else
+                        adjusted_offset = (j-size(obj_chess(l).chess(k).intersections_x,2))*11.25;
+                    end
+                    angle = adjusted_distance*45 + adjusted_offset
+                    h = i*2.6
+                    vect_x = [vect_x, obj_chess(l).chess(k).intersections_x(i,j)];
+                    vect_y = [vect_y, obj_chess(l).chess(k).intersections_y(i,j)];
                 end
-                angle = adjusted_distance*45 + adjusted_offset
-                h = i*2.6
-                vect_x = [vect_x, obj_chess(l).chess(k).intersections_x(i,j)];
-                vect_y = [vect_y, obj_chess(l).chess(k).intersections_y(i,j)];
+                scatter(vect_x(:),vect_y(:)); hold off
+                pause
             end
-            scatter(vect_x(:),vect_y(:)); hold off
-            pause
         end
     end
 end
+%% Calcolo angolo degli specchi
+Mleft = [];
+Mright = [];
+iidi = 1;
+for l=1:size(obj_chess,1)
+    if ( ~obj_chess(l).isEmpty )
+        for i=1:size(obj_chess(l).chess(1).intersections_x,1)
+            for j=1:size(obj_chess(l).chess(1).intersections_x,2)
+                imshow(I); hold on;
+                vect_x = zeros(2,3);
+                vect_y = zeros(2,3);
+                idk = 1;
+                for k =1:size(obj_chess(l).chess,2)           
+                    if (~strcmp(obj_chess(l).chess(k).type,types(2)))
+                        vect_x(1,idk) = obj_chess(l).chess(k).intersections_x(i,j); vect_x(2,idk) = k;
+                        vect_y(1,idk) = obj_chess(l).chess(k).intersections_y(i,j); vect_y(2,idk) = k;
+                        idk = idk +1;
+                    end                                        
+                end
+                vect_xleft = 0; vect_yleft = 0; vect_xmid = 0; vect_ymid = 0; vect_xright = 0; vect_yright = 0;
+                if idk > 2
+                    for k=1:size(vect_x,2)
+                        idk = find(order(2,:)==vect_x(2,k) & order(1,:) == l);
+                        if ~isempty(idk)
+                            pos = label(3,idk);
+                            type = label(4,idk);
+                            assert(~strcmp(type,types(2)));
+                            if (strcmp(pos,positions(1)))
+                                vect_xleft = vect_x(1,k);
+                                vect_yleft = vect_y(1,k);
+                            end
+                            if (strcmp(pos,positions(2)))
+                                vect_xmid = vect_x(1,k);
+                                vect_ymid = vect_y(1,k);
+                            end
+                            if (strcmp(pos,positions(3)))
+                                vect_xright = vect_x(1,k);
+                                vect_yright = vect_y(1,k);
+                            end
+                        end
+                    end
+                    if(~(vect_xleft == 0 || vect_yleft == 0 || vect_xmid == 0 || vect_ymid == 0))
+                        Mleft = [Mleft;[vect_xmid,vect_ymid,vect_xleft,vect_yleft]];
+                        disp(['left',num2str(iidi)]);
+                        iidi = iidi +1;
+                    end
+                    if(~(vect_xright == 0 || vect_yright == 0 || vect_xmid == 0 || vect_ymid == 0))
+                        Mright = [Mright;[vect_xmid,vect_ymid,vect_xright,vect_yright]];
+                        disp(['right',num2str(iidi)]);
+                        iidi = iidi +1;
+                    end  
+                    scatter([Mleft(:,1);Mleft(:,3)],[Mleft(:,2);Mleft(:,4)]); 
+                    scatter([Mright(:,1);Mright(:,3)],[Mright(:,2);Mright(:,4)]);  hold off
+                    pause
+                end
+            end
+        end
+    end
+end
+Mleft = unique(Mleft,'rows');
+Mright = unique(Mright,'rows');
 
 %% Ora come associo i punti se levo il cilindro? Con il codice che già hanno ma usando la griglia.
 %% TODO: Il prof ha detto di stimare la differenza di colore negli histogrammi del rosso al centro e del rosso a destra
