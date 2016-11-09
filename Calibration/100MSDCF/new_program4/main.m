@@ -1162,14 +1162,12 @@ for l=1:size(obj_chess,1)
     end
 end
 %% Calcolo angolo degli specchi
-Mleft = [];
-Mright = [];
-iidi = 1;
+Pleft = [];
+Pright = [];
 for l=1:size(obj_chess,1)
     if ( ~obj_chess(l).isEmpty )
         for i=1:size(obj_chess(l).chess(1).intersections_x,1)
             for j=1:size(obj_chess(l).chess(1).intersections_x,2)
-                imshow(I); hold on;
                 vect_x = zeros(2,3);
                 vect_y = zeros(2,3);
                 idk = 1;
@@ -1203,26 +1201,23 @@ for l=1:size(obj_chess,1)
                         end
                     end
                     if(~(vect_xleft == 0 || vect_yleft == 0 || vect_xmid == 0 || vect_ymid == 0))
-                        Mleft = [Mleft;[vect_xmid,vect_ymid,vect_xleft,vect_yleft]];
-                        disp(['left',num2str(iidi)]);
-                        iidi = iidi +1;
+                        Pleft = [Pleft;[vect_xmid,vect_ymid,vect_xleft,vect_yleft]];
                     end
                     if(~(vect_xright == 0 || vect_yright == 0 || vect_xmid == 0 || vect_ymid == 0))
-                        Mright = [Mright;[vect_xmid,vect_ymid,vect_xright,vect_yright]];
-                        disp(['right',num2str(iidi)]);
-                        iidi = iidi +1;
-                    end  
-                    scatter([Mleft(:,1);Mleft(:,3)],[Mleft(:,2);Mleft(:,4)]); 
-                    scatter([Mright(:,1);Mright(:,3)],[Mright(:,2);Mright(:,4)]);  hold off
-                    pause
+                        Pright = [Pright;[vect_xmid,vect_ymid,vect_xright,vect_yright]];
+                    end
                 end
             end
         end
     end
 end
-Mleft = unique(Mleft,'rows');
-Mright = unique(Mright,'rows');
-
+Pleft = unique(Pleft,'rows');
+Pright = unique(Pright,'rows');
+imshow(I); hold on;
+scatter([Pleft(:,1);Pleft(:,3)],[Pleft(:,2);Pleft(:,4)]);
+pause
+imshow(I); hold on;
+scatter([Pright(:,1);Pright(:,3)],[Pright(:,2);Pright(:,4)]);
 %% Ora come associo i punti se levo il cilindro? Con il codice che già hanno ma usando la griglia.
 %% TODO: Il prof ha detto di stimare la differenza di colore negli histogrammi del rosso al centro e del rosso a destra
 
