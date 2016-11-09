@@ -2,8 +2,10 @@ close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
 checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
-orig = imread(['foto/Testato/DSC0012',num2str(3),'_C1.JPG']);
-orig_bg = imread(['foto/Testato/DSC0012',num2str(4),'_N1.JPG']);
+path = 'foto/';
+name = ['DSC0014',num2str(7)];
+orig = imread([path,name,'.JPG']);
+orig_bg = imread([path,'DSC0014',num2str(8),'.JPG']);
 %% Normalizzazione
 figure, [O, BB] = imcrop(orig);
 R = im2double(O(:,:,1));
@@ -30,6 +32,10 @@ confidence = 2.8;
 [r,c] = size(I); Threshold = round(r*c/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
 mpd = 15;
 windowSize = 6;
+op_th_red = 20; op_th_green = 20; op_th_blue = 20; op_th_yellow = 20;
+if exist([path,name,'.mat'], 'file') == 2
+    load([path,name,'.mat'])
+end
 %% Background Subtraction
 lab_image_bg = rgb2lab(I_BG);
 lab_imgae_fg = rgb2lab(I);
@@ -83,10 +89,10 @@ hsv = rgb2hsv(RGB);
 % Non sono in grado d distinguere tra il viola e il rosso, tra l'azzurro e il blu, quindi 4 cluster invece che 6
 figure, imshow(imread('hsv.jpg'));
 %% Segmentazione RGB, hist_size, output_minima_mid, Threshold, band
-obj_red = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'red');
-obj_green = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'green');
-obj_blue = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'blue');
-obj_yellow = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'yellow');
+obj_red = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'red', op_th_red);
+obj_green = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'green', op_th_green);
+obj_blue = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'blue', op_th_blue);
+obj_yellow = createMask(I, bw, hist_size, output_minima_mid, Threshold, 'yellow', op_th_yellow);
 % Se il contorno di sopra o sotto è troppo piccolo usare bbox
 % Per eliminare merde laterali puoi calcolare la maskera con la fit square,
 % erodere e risegmentare
@@ -935,10 +941,8 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
         %figure, imshow(tmp), hold on, scatter(dot(:,1),dot(:,2))
         P = [P;min(cutR)+dot(:,2),min(cutC)+dot(:,1)];      
         if(isempty(dot))
-            figure,
             while(condition && th>0)
                 bw_tmp = im2bw(tmp,th);
-                imshow(bw_tmp);
                 th = th-0.01;
                 CC_tmp = bwconncomp(bw_tmp,4);        
                 if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)
@@ -960,8 +964,7 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
                          condition = true;
                     end
                 end
-                if(CC_tmp.NumObjects == 2)
-                   
+                if(CC_tmp.NumObjects == 2)                  
                    store(1) = CC_tmp.PixelIdxList(1);
                    store(2) = CC_tmp.PixelIdxList(2);          
                 end 
@@ -1223,9 +1226,8 @@ scatter([Pright(:,1);Pright(:,3)],[Pright(:,2);Pright(:,4)]);
 
 %% Come stimo l'angolo degli specchi?
 
-
-
-
+%% Salvataggio Setup
+save([path,name,'.mat'],'confidence','Threshold','mpd','windowSize','op_th_red','op_th_green','op_th_blue','op_th_yellow');
 
     % Allineamento a sinistra/destra delle matrici: operazione necessaria
     % prima del flip per generare le corrispondenze.

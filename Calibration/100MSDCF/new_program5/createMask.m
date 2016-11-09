@@ -24,7 +24,6 @@ switch band
         red_th_min = output_minima_mid(1)/hist_size;
         red_th_max = output_minima_mid(4)/hist_size;
         bw_red = (hsv_inImg(:,:,1)<=red_th_min | hsv_inImg(:,:,1)>=red_th_max) & bw;
-        bw_red = imclose(bw_red,strel('square',20));
         bw_red = bwareaopen(bw_red,Threshold);
         figure, imshow(RGB.*repmat(bw_red,[1 1 3]));
         BW = bwareaopen(bw_red, 300); % Parametro
@@ -68,7 +67,6 @@ switch band
         green_th_min = output_minima_mid(2)/hist_size;
         green_th_max = output_minima_mid(3)/hist_size;
         bw_green = hsv_inImg(:,:,1)>=green_th_min & hsv_inImg(:,:,1)<=green_th_max & bw;
-        bw_green = imclose(bw_green,strel('square',20));
         bw_green = bwareaopen(bw_green,Threshold);
         figure, imshow(RGB.*repmat(bw_green,[1 1 3]));
         BW = bwareaopen(bw_green, 300); % Parametro
@@ -111,7 +109,6 @@ switch band
         blu_th_min = output_minima_mid(3)/hist_size;
         blu_th_max = output_minima_mid(4)/hist_size;
         bw_blu = hsv_inImg(:,:,1)>=blu_th_min & hsv_inImg(:,:,1)<=blu_th_max & bw;
-        bw_blu = imclose(bw_blu,strel('square',20));
         bw_blu = bwareaopen(bw_blu,Threshold);
         bw_blu = imclose(bw_blu,strel('square',10));
         figure, imshow(RGB.*repmat(bw_blu,[1 1 3]));
@@ -156,7 +153,6 @@ switch band
         yellow_th_min = output_minima_mid(1)/hist_size;
         yellow_th_max = output_minima_mid(2)/hist_size;
         bw_yellow = hsv_inImg(:,:,1)>=yellow_th_min & hsv_inImg(:,:,1)<=yellow_th_max & bw;
-        bw_yellow = imclose(bw_yellow,strel('square',20));
         bw_yellow = bwareaopen(bw_yellow,Threshold);
         figure, imshow(RGB.*repmat(bw_yellow,[1 1 3]));
         BW = bwareaopen(bw_yellow, 300); % Parametro
@@ -230,6 +226,11 @@ for i = 1:size(x,1)
     mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
     mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
     color_square =  BW&mask;
+    y1_old = y(i,1); y2_old = y(i,2); 
+    [color_square,y(i,1),y(i,2), isDone] = checkbadthings(color_square, mask, Threshold, op_th);
+    if ( isDone )
+        BW(y1_old:y2_old,x(i,1):x(i,2)) = color_square(y1_old:y2_old,x(i,1):x(i,2));
+    end
     CC = bwconncomp(color_square);
     if(size(CC.PixelIdxList,2) == 1)
         BW_TMP = false(size(blackwhite_BW));
@@ -251,19 +252,6 @@ for i = 1:size(x,1)
     end
     if(size(CC.PixelIdxList,2) == 2) % Risolvere il problema quando abbiamo solo due componenti connesse all'interno di una sezione. Cioè quando abbiamo solo i due quadrati intermedi, per calcolare la maschera complementare dobbiamo simulare quello di sotpra e quello di sottoaltrimenti la regione sarebbe ritagliata troppo piccola.
         stats = cell2mat(struct2cell(regionprops(color_square,'BoundingBox'))); % Devo essere sicuro siano due blob isolati
-        % TODO Se la distanza tra due centroidi di blob è piccola rimuovili
-%         color_square(CC.PixelIdxList{1}) = 0;
-%         idx = find(color_square == 1);
-%         [idx,idy]=ind2sub(size(mask),idx);
-%         j = boundary(idx,idy,0.98); % Parametro
-%         mask = poly2mask(idy(j),idx(j), size(mask,1), size(mask,2));
-%         contour_square = edge(imfill(mask,'holes'));
-%         p_filt = fspecial('prewit');
-%         x_sides = imfilter(contour_square,p_filt);
-%         y_sides = imfilter(contour_square,p_filt');
-%         xy_sides = x_sides & y_sides;
-%         x_sides = bwareaopen(x_sides & ~xy_sides, 5);
-%         y_sides = bwareaopen(y_sides & ~xy_sides, 5);
         if((stats(4) + stats(8))< 0.5*size(maskedRGBImage,1))
             mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
             %en = abs(y(i,2)-y(i,1))/3;
