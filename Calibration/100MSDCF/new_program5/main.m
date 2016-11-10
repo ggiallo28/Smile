@@ -3,15 +3,15 @@ figure,imshow(imread('checkerboard.jpg'));
 checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
 path = 'foto/';
-name = ['DSC0014',num2str(6)];
-orig = imread([path,name,'.JPG']);
-orig_bg = imread([path,'DSC0014',num2str(9),'.JPG']);
+name = ['DSC0012',num2str(4)];
+orig = imread([path,name,'_1_C5.JPG']);
+orig_bg = imread([path,'DSC0012',num2str(4),'_1_N5.JPG']);
 %% Normalizzazione
 [I, I_BG, O, O_BG, BB] = normalize_image(orig, orig_bg);
 %% Parametri
 confidence = 2.8;
 [r,c] = size(I); Threshold = round(r*c/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
-mpd = 15;
+mpd = 25;
 windowSize = 6;
 op_th = 15;
 if exist([path,name,'.mat'], 'file') == 2
@@ -197,10 +197,13 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
     [GRIDhh, GRIDh] = getHImage(grid_pos,grid_typ,obj_chess, order, label, size(maskI), maskI);
     GRIDh_filled = filledgegaps(GRIDh.*imerode(maskI,strel('rectangle',[30,2])),30);
     CC_GRIDh = bwconncomp(GRIDh_filled,8);
+    figure, imshow(GRIDh_filled); hold on
     for h_count=1:CC_GRIDh.NumObjects
         [circley,circlex] = ind2sub(size(mask),CC_GRIDh.PixelIdxList{h_count}); 
-         horizontalCell{i,h_count} = createLineInv(circley,circlex,size(mask));
+         horizontalCell{i,h_count} = createLine(circlex,circley);
+         plot(horizontalCell{i,h_count});
     end
+    hold off
 
     GRIDvv = getVImage(bwV, maskI, GRIDh);
     GRID = imerode(maskI,strel('rectangle',[30,10])) & ~mask & ~imdilate(gapGRIDLeft,strel('disk',dilateLeft)) & ~imdilate(gapGRIDRight,strel('disk',dilateRight));% | GRIDvv;
@@ -257,7 +260,7 @@ for i=1:5 % Non sei indipendente dal numero di riflessi
         end
     end
     lines = [];
-    if usu > 0 && toTakeRight
+    if usu > 0 && toTakeRight && ~isempty(line)
         for k=1:CC.NumObjects
             if(usu_center(1,k)==0)
                 if(~isLeft(line,usu_center(2,k),usu_center(3,k)))
@@ -424,7 +427,13 @@ for k=1:5
         x_cj_matrix_copy(:,id) = [];
         
         obj_chess(idx_chess_vector).chess(idx_color_chess).intersections_x = x_cj_matrix_copy;
-        obj_chess(idx_chess_vector).chess(idx_color_chess).intersections_y = y_rj_matrix_copy;   
+        obj_chess(idx_chess_vector).chess(idx_color_chess).intersections_y = y_rj_matrix_copy;
+%         for ii=1:size(x_cj_matrix_copy,1)
+%             for jj=1:size(x_cj_matrix_copy,2)
+%                 imshow(I); hold on; scatter(x_cj_matrix_copy(ii,jj),y_rj_matrix_copy(ii,jj));
+%                 pause
+%             end
+%         end
         imshow([I;repmat(255.*ch_mask,1,1,3)]); hold on;
         scatter(x_cj_matrix_copy(:),y_rj_matrix_copy(:));
     end    
@@ -435,11 +444,7 @@ end
 % inferiore di colonne
 for l=1:size(obj_chess,1)
     if ( ~obj_chess(l).isEmpty )
-        v = zeros(1,size(obj_chess(l).chess,2));
-        for q=1:size(obj_chess(l).chess,2)
-           v(q) = size(obj_chess(l).chess(q).intersections_x,2); 
-        end
-        max_v = max(v);
+        max_v = 5; % numero di punti per checkerboard     
         for q=1:size(obj_chess(l).chess,2)
             num_col = size(obj_chess(l).chess(q).intersections_x,2);
             num_row = size(obj_chess(l).chess(q).intersections_x,1);
@@ -490,44 +495,18 @@ for l=1:size(obj_chess,1)
                    fliplr(obj_chess(l).chess(q).intersections_x);
                obj_chess(l).chess(q).intersections_y = ...
                    fliplr(obj_chess(l).chess(q).intersections_y);
+               obj_chess(l).chess(q).isFlipped = true;
             end
+            obj_chess(l).chess(q).h_matrix = zeros(size(intersections_y,1),max_v);
+            obj_chess(l).chess(q).angle_matrix = zeros(size(intersections_y,1),max_v);
         end
     end
 end
 
 %% Mapping sulla superficie del Manifold
-axis_line = reshape([192,192,192;192,192,192],2,1,3);
-checher_vector_with_axis = uint8([checker_vector(:,1:3,:),axis_line,checker_vector(:,4:6,:)]); 
-figure, imshow(checher_vector_with_axis);
+obj_chess = generate_mapping(checker_vector, obj_chess);
+show_mapping(obj_chess, I);
 
-% La checker è suddivisa verticalmente in 4 quadrati, ciò significa 5 punti compresi quelli di intersezione
-% Ogni quadrante rappresenta 45°, quindi ad ogni punto corrisponde un angolo di 9°
-for l=1:size(obj_chess,1)
-    if ( ~obj_chess(l).isEmpty )
-        for i=1:size(obj_chess(l).chess(1).intersections_x,1)
-            for j=1:size(obj_chess(l).chess(1).intersections_x,2)
-                imshow(I); hold on;
-                vect_x = [];
-                vect_y = [];
-                for k =1:size(obj_chess(l).chess,2)
-                    axis_distance = axisdistance(obj_chess(l).name,obj_chess(l).chess(k).background,checher_vector_with_axis);
-                    adjusted_distance = axis_distance-1*sign(axis_distance); % Se positivo togliamo 1, se negativo aggiungiamo 1, le tessere gialle e rosse stanno a distanza zero.
-                    if(sign(axis_distance) >0)
-                        adjusted_offset = (j-1)*11.25;
-                    else
-                        adjusted_offset = (j-size(obj_chess(l).chess(k).intersections_x,2))*11.25;
-                    end
-                    angle = adjusted_distance*45 + adjusted_offset
-                    h = i*2.6
-                    vect_x = [vect_x, obj_chess(l).chess(k).intersections_x(i,j)];
-                    vect_y = [vect_y, obj_chess(l).chess(k).intersections_y(i,j)];
-                end
-                scatter(vect_x(:),vect_y(:)); hold off
-                pause
-            end
-        end
-    end
-end
 %% Calcolo angolo degli specchi
 Pleft = [];
 Pright = [];

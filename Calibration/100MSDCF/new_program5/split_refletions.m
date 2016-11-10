@@ -12,7 +12,7 @@ function [order, label, positions, types, obj_chess] = split_refletions(obj_ches
     for l=1:size(obj_chess,1)
         if ( ~obj_chess(l).isEmpty )
             for i = 1:size(obj_chess(l).chess,2)
-                order = [order,[l;i;obj_chess(l).chess(i).centroid(1)]]; k = k+1;
+                order = [order,[l;i;obj_chess(l).chess(i).centroid(1);obj_chess(l).chess(i).centroid(2)]]; k = k+1;
             end
         end
     end
@@ -65,106 +65,132 @@ function [order, label, positions, types, obj_chess] = split_refletions(obj_ches
         left = 0;
         right = 0;
         arr = [];
-        for i = 1:size(obj_chess(l).chess,2)
-            v(1) = sum(sum(obj_chess(l).chess(i).mask&maskLeft));
-            v(2) = sum(sum(obj_chess(l).chess(i).mask&maskCenter));
-            v(3) = sum(sum(obj_chess(l).chess(i).mask&maskRight));
-            idx = find(v==max(v));
-            if(idx==1)
-               left = left +1; 
-            end
-            if(idx==3)
-               right = right +1; 
-            end
-            arr = [arr,obj_chess(l).chess(i).position];
-        end
-        %% TODO Sistemare sta cosa non va bene fare assunzioni sul numero di riflessi che vedi
-        if(left >= 2 && right == 1)
-           idx = find(strcmp(arr,positions(1)));
-           obj_chess(l).chess(idx(1)).type = types(2);
-           obj_chess(l).chess(idx(2)).type = types(1); 
-           idx = find(strcmp(arr,positions(3)));
-           obj_chess(l).chess(idx(1)).type = types(1);
-        end
-        if(right >= 2 && left == 1)
-           idx = find(strcmp(arr,positions(3)));
-           obj_chess(l).chess(idx(1)).type = types(1);
-           obj_chess(l).chess(idx(2)).type = types(2);  
-           idx = find(strcmp(arr,positions(1)));
-           obj_chess(l).chess(idx(1)).type = types(1);
-        end
-        empty_type = false;
-        for i = 1:size(obj_chess(l).chess,2)
-            if(isempty(obj_chess(l).chess(i).type))
-                empty_type = true;
-            end
-        end
-        % Se sono rimaste tessere senza nessuna labels associata
-        if(empty_type)
+        if ( ~obj_chess(l).isEmpty )
             for i = 1:size(obj_chess(l).chess,2)
-                % Se non si tratta di una tessera centrale, non ha senso analzizarla di sicuro non è ne primaria ne secondaria
-                if(~strcmp(obj_chess(l).chess(i).position,positions(2)))
-                    curr_color = name2code(obj_chess(l).name);
-                    % Cerchiamo la tessera corrente nel vettore di ordine
-                    idx = find(order(3,:) == obj_chess(l).chess(i).centroid(1));
-                    % Cerchiamo la posizione della tessera centrale
-                    labs = find(strcmp(label(3,:),positions(2)));
-                    % Se idx è precedente della prima tessera centrale:
-                    %   > è la prima tessera? Allora guardiamo a destra
-                    %   > non è la prima tessera? Allora guardiamo a sinistra
-                    % Se idx è successivo all'ultima tessera centrale:
-                    %   > è la prima l'ultima tessera? Allora guardiamo a sinistra
-                    %   > non è l'ultima tessera? Allora guardiamo a destra
-                    % Usiamo l'ordine dei colori per determinare l'ordinamento, i casi con due colori a sinistra 
-                    % o a destra sono banali e sono stati gestiti precedentemente.
-                    if(idx < labs(1))
-                        if(idx~=1)
-                            color = name2code(obj_chess(order(1,idx-1)).name);                   
-                            % Sfruttiamo il checker vector, se i colori sono invertiti rispetto all'ordine originale allora
-                            % abbiamo un riflesso primario, altrimenti abbiamo un riflesso secondario. 
-                            check = checker_vector(2,:,:);
-                            ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                            jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
-                            if(jj>ii)
-                                 obj_chess(l).chess(i).type = types(2);
+                v(1) = sum(sum(obj_chess(l).chess(i).mask&maskLeft));
+                v(2) = sum(sum(obj_chess(l).chess(i).mask&maskCenter));
+                v(3) = sum(sum(obj_chess(l).chess(i).mask&maskRight));
+                idx = find(v==max(v));
+                if(idx==1)
+                   left = left +1; 
+                end
+                if(idx==3)
+                   right = right +1; 
+                end
+                arr = [arr,obj_chess(l).chess(i).position];
+            end
+            %% TODO Sistemare sta cosa non va bene fare assunzioni sul numero di riflessi che vedi
+            if(left >=2 && right>=2)
+                idx = find(strcmp(arr,positions(1)));
+                obj_chess(l).chess(idx(1)).type = types(2);
+                obj_chess(l).chess(idx(2)).type = types(1); 
+                idx = find(strcmp(arr,positions(3)));
+                obj_chess(l).chess(idx(1)).type = types(1);
+                obj_chess(l).chess(idx(2)).type = types(2);
+            end
+            if(left >= 2 && right == 1)
+               idx = find(strcmp(arr,positions(1)));
+               obj_chess(l).chess(idx(1)).type = types(2);
+               obj_chess(l).chess(idx(2)).type = types(1); 
+               idx = find(strcmp(arr,positions(3)));
+               obj_chess(l).chess(idx(1)).type = types(1);
+            end
+            if(right >= 2 && left == 1)
+               idx = find(strcmp(arr,positions(3)));
+               obj_chess(l).chess(idx(1)).type = types(1);
+               obj_chess(l).chess(idx(2)).type = types(2);  
+               idx = find(strcmp(arr,positions(1)));
+               obj_chess(l).chess(idx(1)).type = types(1);
+            end
+            empty_type = false;
+            for i = 1:size(obj_chess(l).chess,2)
+                if(isempty(obj_chess(l).chess(i).type))
+                    empty_type = true;
+                end
+            end
+            % Se sono rimaste tessere senza nessuna labels associata
+            if(empty_type)
+                for i = 1:size(obj_chess(l).chess,2)
+                    % Se non si tratta di una tessera centrale, non ha senso analzizarla di sicuro non è ne primaria ne secondaria
+                    if(~strcmp(obj_chess(l).chess(i).position,positions(2)))
+                        curr_color = name2code(obj_chess(l).name);
+                        % Cerchiamo la tessera corrente nel vettore di ordine
+                        idx = find(order(3,:) == obj_chess(l).chess(i).centroid(1));
+                        % Cerchiamo la posizione della tessera centrale
+                        labs = find(strcmp(label(3,:),positions(2)));
+                        % Se idx è precedente della prima tessera centrale:
+                        %   > è la prima tessera? Allora guardiamo a destra
+                        %   > non è la prima tessera? Allora guardiamo a sinistra
+                        % Se idx è successivo all'ultima tessera centrale:
+                        %   > è la prima l'ultima tessera? Allora guardiamo a sinistra
+                        %   > non è l'ultima tessera? Allora guardiamo a destra
+                        % Usiamo l'ordine dei colori per determinare l'ordinamento, i casi con due colori a sinistra 
+                        % o a destra sono banali e sono stati gestiti precedentemente.
+                        if(idx < labs(1))
+                            if(idx~=1)
+                                color = name2code(obj_chess(order(1,idx-1)).name);                   
+                                % Sfruttiamo il checker vector, se i colori sono invertiti rispetto all'ordine originale allora
+                                % abbiamo un riflesso primario, altrimenti abbiamo un riflesso secondario. 
+                                check = checker_vector(2,:,:);
+                                ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                                jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
+                                if(ii==1 && jj == size(check,2))
+                                    obj_chess(l).chess(i).type = types(1);
+                                elseif (ii==size(check,2) && jj ==1)
+                                    obj_chess(l).chess(i).type = types(2);
+                                elseif(jj>ii)
+                                    obj_chess(l).chess(i).type = types(2);
+                                else
+                                    obj_chess(l).chess(i).type = types(1);
+                                end
                             else
-                                 obj_chess(l).chess(i).type = types(1);
+                                color = name2code(obj_chess(order(1,idx+1)).name);
+                                check = checker_vector(2,:,:);
+                                ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                                jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
+                                if(ii == size(check,2) && jj == 1)
+                                    obj_chess(l).chess(i).type = types(1);
+                                elseif (ii==1 && jj == size(check,2))
+                                    obj_chess(l).chess(i).type = types(2);
+                                elseif(jj<ii)
+                                     obj_chess(l).chess(i).type = types(2);
+                                else
+                                     obj_chess(l).chess(i).type = types(1);
+                                end
                             end
-                        else
-                            color = name2code(obj_chess(order(1,idx+1)).name);
-                            check = checker_vector(2,:,:);
-                            ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                            jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
-                            if(jj<ii)
-                                 obj_chess(l).chess(i).type = types(2);
+                        elseif(idx > labs(end))
+                            if (idx~=size(order,2))
+                                color = name2code(obj_chess(order(1,idx+1)).name);
+                                check = checker_vector(2,:,:);
+                                ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                                jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
+                                if(ii == size(check,2) && jj == 1)
+                                    obj_chess(l).chess(i).type = types(1);
+                                elseif (ii==1 && jj == size(check,2))
+                                    obj_chess(l).chess(i).type = types(2);
+                                elseif(jj<ii)
+                                     obj_chess(l).chess(i).type = types(2);
+                                else
+                                     obj_chess(l).chess(i).type = types(1);
+                                end
                             else
-                                 obj_chess(l).chess(i).type = types(1);
+                                color = name2code(obj_chess(order(1,idx-1)).name);
+                                check = checker_vector(2,:,:);
+                                ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                                jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
+                                if(ii==1 && jj == size(check,2))
+                                    obj_chess(l).chess(i).type = types(1);
+                                elseif (ii==size(check,2) && jj ==1)
+                                    obj_chess(l).chess(i).type = types(2);
+                                elseif(jj>ii)
+                                     obj_chess(l).chess(i).type = types(2);
+                                else
+                                     obj_chess(l).chess(i).type = types(1);
+                                end 
                             end
                         end
-                    elseif(idx > labs(end))
-                        if (idx~=size(order,2))
-                            color = name2code(obj_chess(order(1,idx+1)).name);
-                            check = checker_vector(2,:,:);
-                            ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                            jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
-                            if(jj<ii)
-                                 obj_chess(l).chess(i).type = types(2);
-                            else
-                                 obj_chess(l).chess(i).type = types(1);
-                            end
-                        else
-                            color = name2code(obj_chess(order(1,idx-1)).name);
-                            check = checker_vector(2,:,:);
-                            ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                            jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
-                            if(jj>ii)
-                                 obj_chess(l).chess(i).type = types(2);
-                            else
-                                 obj_chess(l).chess(i).type = types(1);
-                            end 
-                        end
-                    end
-                end 
+                    end 
+                end
             end
         end
     end

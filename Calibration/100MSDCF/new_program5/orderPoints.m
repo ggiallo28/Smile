@@ -1,6 +1,6 @@
 function [rj, cj] = orderPoints(P, horizontalCell, verticalCell, mask)
     vect_h = zeros(2,size(horizontalCell,2));
-%    figure, imshow(mask), hold on;
+    %figure, imshow(mask), hold on;
     for i=1:size(horizontalCell,2)
         if(~isempty(horizontalCell{i}))
             horizontal_image = line2image(horizontalCell{i},size(mask));
@@ -9,7 +9,7 @@ function [rj, cj] = orderPoints(P, horizontalCell, verticalCell, mask)
             idx = mean(find(w ~=0));
             vect_h(1,i) = idx;
             vect_h(2,i) = i;
-%            plot(horizontalCell{i})
+            %plot(horizontalCell{i})
         end
     end
     vect_h(:,vect_h(1,:)==0) = [];

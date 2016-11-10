@@ -297,7 +297,7 @@ for i = 1:size(x,1)
             color_square(top_edge) = 1;
         end
     end
-    [color_square, obj.chess(i)] = fitSquare(color_square,x(i,1),x(i,2),obj.chess(i)); 
+    [color_square, obj.chess(i)] = fitSquare(color_square,x(i,1),x(i,2),obj.chess(i));
     mask = ~BW&mask&color_square;
     mask = imerode(mask,strel('line',7,0));
     image = rgb2gray(RGB);
@@ -317,6 +317,7 @@ inv_BW = bwareaopen(inv_BW,100);
 y(ii,:) = [];
 x(ii,:) = [];
 colors(:,ii) = [];
+obj.chess(ii) = [];
 obj.bbox_x = x;
 obj.bbox_y = y;
 
@@ -538,7 +539,7 @@ for i = 1:size(x,1)
         end 
     end
 end
-
+% Se su una stessa riga ho un centroide in più rimuovilo
 for i=1:size(obj.chess,2)
     X = obj.chess(i).center_x;
     Y = obj.chess(i).center_y;
