@@ -1,0 +1,2 @@
+function pointsArray = get_corners(I, O, obj_chess, left_center_axis, right_center_axis, mid_center_axis, FullMask, maskCI, isC, maskL1I, isL1, maskL2I, isL2, maskR1I, isR1, maskR2I, isR2, order, label)
+    
