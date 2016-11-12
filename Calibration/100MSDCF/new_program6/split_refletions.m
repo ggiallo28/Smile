@@ -1,4 +1,6 @@
-function [order, label, positions, types, obj_chess] = split_refletions(obj_chess, fuse, checker_vector)
+function Container = split_refletions(Container, fuse, checker_vector)
+    obj_chess = Container.obj_chess;
+    
     enlarged = imdilate(fuse,strel('disk',20));
     CC = bwconncomp(rgb2gray(enlarged)~=0);
     assert(CC.NumObjects == 3, 'Ci sono troppi riflessi');
@@ -201,4 +203,9 @@ function [order, label, positions, types, obj_chess] = split_refletions(obj_ches
         idx_color_chess = order(2,j);
         label(4,j) = obj_chess(idx_chess_vector).chess(idx_color_chess).type;
     end
+    Container.order = order;
+    Container.label = label;
+    Container.positions = positions;
+    Container.types = types; 
+    Container.obj_chess = obj_chess;
 end

@@ -24,16 +24,6 @@ function [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, op
             end
         end
     end
-    for i = 1:size(x,1)
-        mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
-        mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
-        color_square =  BW&mask;
-        [color_square, yy, isDone] = checkbadthings(color_square, Threshold, op_th, y, x(i,:), false);
-        if ( isDone )
-            BW(y(i,1):y(i,2),x(i,1):x(i,2)) = color_square(y(i,1):y(i,2),x(i,1):x(i,2));
-            y(i,:) = yy;
-        end
-    end
     y(ii,:) = [];
     x(ii,:) = [];
 end

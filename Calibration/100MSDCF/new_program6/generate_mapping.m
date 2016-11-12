@@ -1,4 +1,5 @@
-function obj_chess = generate_mapping(checker_vector, obj_chess)
+function Container = generate_mapping(Container, checker_vector)
+    obj_chess = Container.obj_chess;
     angle_sector = 60;
     angle_square = 15;
     height_square = 2.6;
@@ -25,4 +26,5 @@ function obj_chess = generate_mapping(checker_vector, obj_chess)
             end
         end
     end
+    Container.obj_chess = obj_chess;
 end

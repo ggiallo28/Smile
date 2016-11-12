@@ -18,6 +18,32 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     color_square_bb(2)+color_square_bb(4) color_square_bb(2)]);
     color_square_edge_v = abs(imfilter(imfill(color_square,'holes'),[-1 0 1])) + abs(imfilter(imfill(color_square,'holes'),[1 0 -1]));
     color_square_edge_h = abs(imfilter(imfill(color_square,'holes'),[1 0 -1]'))+abs(imfilter(imfill(color_square,'holes'),[-1 0 1]'));
+    % https://kyamagu.github.io/mexopencv/matlab/minAreaRect.html
+    [idr,idc] = ind2sub(size(color_square),find(imfill(color_square,'holes')==1));
+    rct = cv.minAreaRect([idr,idc]);
+    %ROTATED RECTANGLE
+    Cx = rct.center(2); Cy = rct.center(1); %the coordinates of your center point in world coordinates
+    W = rct.size(2); % the width of your rectangle
+    H = rct.size(1); % the height of your rectangle
+    theta = -deg2rad(rct.angle); % the angle you wish to rotate
+    %The offset of a corner in local coordinates (i.e. relative to the pivot point) (which corner will depend on the coordinate reference system used in your environment)
+    Ox = W / 2;
+    Oy = H / 2;
+    % The rotated position of this corner in world coordinates 
+    imshow(color_square); hold on;
+    P1 = [Cx + (Ox  * cos(theta)) - (Oy * sin(theta)), Cy + (Ox  * sin(theta)) + (Oy * cos(theta))];
+    P2 = [Cx - (Ox  * cos(theta)) - (Oy * sin(theta)), Cy - (Ox  * sin(theta)) + (Oy * cos(theta))];
+    P3 = [Cx - (Ox  * cos(theta)) + (Oy * sin(theta)), Cy - (Ox  * sin(theta)) - (Oy * cos(theta))];
+    P4 = [Cx + (Ox  * cos(theta)) + (Oy * sin(theta)), Cy + (Ox  * sin(theta)) - (Oy * cos(theta))];
+    plot([P1(1) P2(1)],[P1(2) P2(2)]);
+    plot([P1(1) P4(1)],[P1(2) P4(2)]);
+    plot([P4(1) P3(1)],[P4(2) P3(2)]);
+    plot([P3(1) P2(1)],[P3(2) P2(2)]);
+    [LTp, RTp, LBp, RBp] = sortPoints(P1,P2,P3,P4,Cy);  
+    [rct_line_left, ~] = createLine([LBp(2) LTp(2)],[LBp(1) LTp(1)]); % Al contrario perchè ho necessità di sostituire la y
+    [rct_line_right, ~] = createLine([RBp(2) RTp(2)],[RBp(1) RTp(1)]);
+    [rct_line_left_test, ~] = createLine([LBp(1) LTp(1)],[LBp(2) LTp(2)]);
+    [rct_line_right_test, ~] = createLine([RBp(1) RTp(1)],[RBp(2) RTp(2)]);
 %% HORIZONTAL
     color_square_edge_h = color_square_edge_h-color_square_edge_v;
     color_square_edge_h(color_square_edge_h<0) = 0;
@@ -74,7 +100,7 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
         fitresult_bot = fitresult_bot_tmp;
     end
     plot(fitresult_bot);
-%% VERTICAL
+%% HORIZONTAL 2
     yLB = fitresult_bot(x1);
     yRB = fitresult_bot(x2);
     yLT = fitresult_top(x1);
@@ -99,6 +125,7 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     
     image = line2image(line1,size(color_square)) | line2image(line2,size(color_square)) |...
         line2image(line3,size(color_square)) | line2image(line4,size(color_square));
+%% VERTICAL
     image = imdilate(image,strel('disk',10));
     color_square_edge_v = color_square_edge_v - color_square_edge_h-image;
     color_square_edge_v(color_square_edge_v<0) = 0;
@@ -111,15 +138,17 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     color_square_edge_v = bwareaopen(color_square_edge_v, filt); % Parametro
     CC_edge_v = regionprops(color_square_edge_v,'Centroid','Image');
     CC_v = bwconncomp(color_square_edge_v);
-
-    xL = color_square_bb(1);
-    xR = color_square_bb(1)+color_square_bb(3);
+% 
+%     xL = color_square_bb(1);
+%     xR = color_square_bb(1)+color_square_bb(3);
     vect_left = zeros(5,size(CC_edge_v,1));
     vect_right = zeros(5,size(CC_edge_v,1));
     
     for count=1:size(CC_edge_v,1)   
         xC = CC_edge_v(count).Centroid(1);
         yC = CC_edge_v(count).Centroid(2);
+        xL = rct_line_left(yC);
+        xR = rct_line_right(yC);
         vect_left(1,count) = count;
         vect_left(2,count) = abs(xC-xL);
         vect_left(3,count) = CC_edge_v(count).Centroid(2);

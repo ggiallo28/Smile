@@ -1,4 +1,20 @@
-function [left_center_axis, right_center_axis, mid_center_axis] = generate_central_axis(I, obj_chess, FullMask, maskCI, isC, maskL1I, isL1, maskL2I, isL2, maskR1I, isR1, maskR2I, isR2)
+function [left_center_axis, right_center_axis, mid_center_axis] = generate_central_axis(Container);
+%% INIT
+    I = Container.I;
+    obj_chess = Container.obj_chess;
+    FullMask = Container.FullMask;
+    maskCI = Container.maskCI;
+    isC = Container.isC;
+    maskL1I = Container.maskL1I;
+    isL1 = Container.isL1;
+    maskL2I = Container.maskL2I;
+    isL2 = Container.isL2;
+    maskR1I = Container.maskR1I;
+    isR1 = Container.isR1;
+    maskR2I = Container.maskR2I;
+    isR2 = Container.isR2;
+%% LOGIC
+
     BlurredMask = imgaussfilt(double(FullMask),10);
     R = im2double(I(:,:,1)); G = im2double(I(:,:,2)); B = im2double(I(:,:,3));
     MINRGB = min(R,G); MINRGB = min(MINRGB,B);

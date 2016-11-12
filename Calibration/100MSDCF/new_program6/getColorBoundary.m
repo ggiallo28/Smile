@@ -51,7 +51,11 @@ function [obj_chess, transtions] = getColorBoundary(obj_red, obj_green, obj_blue
     check = checker_vector(2,:,:);
     last = 0;
     idx_curr = raw_order(1:2,1)';
-    transtions = [idx_curr,0,0];
+    % -1 = Left
+    % 1 = Right
+    side = -1;
+    transtions = [idx_curr,side];
+    side = -1*side;
     for i=1:size(raw_label,2)-1
         curr_color = name2code(raw_label(1,i));
         succ_color = name2code(raw_label(1,i+1));
@@ -73,10 +77,13 @@ function [obj_chess, transtions] = getColorBoundary(obj_red, obj_green, obj_blue
         if(last ~= 0 && last~=order)   
             idx_curr = raw_order(1:2,i)';
             idx_succ = raw_order(1:2,i+1)';
-            transtions = [transtions;[idx_curr,idx_succ]]; %obj_curr id_chess_curr, obj_succ id_chess_succ
+            transtions = [transtions;[idx_curr,side]]; %obj_curr id_chess_curr, obj_succ id_chess_succ
+            side = -1*side;
+            transtions = [transtions;[idx_succ,side]]; %obj_curr id_chess_curr, obj_succ id_chess_succ
+            side = -1*side;
         end
         last = order;
     end
     idx_succ = raw_order(1:2,end)';
-    transtions = [transtions;[0,0,idx_succ]];
+    transtions = [transtions;[idx_succ,side]];
 end

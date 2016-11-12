@@ -17,8 +17,6 @@ function [obj] = computeChess(Container, bw, hist_size, output_minima_mid, band)
     [x, y] = compute_projections(BW, split);
 %% Checkerboard Filtering
     [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, op_th);
-%% Adjust 2 squares
-    [BW, y] = twosquares_adjust(x, y, BW);
     obj.bbox_x = x;
     obj.bbox_y = y;
 %% RAW Elements for separation

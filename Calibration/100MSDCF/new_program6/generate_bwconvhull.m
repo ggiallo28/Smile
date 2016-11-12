@@ -1,4 +1,15 @@
-function [maskCI, maskL1I, maskL2I, maskR1I, maskR2I] = generate_bwconvhull(maskC, isC, maskL1, isL1, maskL2, isL2, maskR1, isR1, maskR2, isR2)
+function Container = generate_bwconvhull(Container)
+    maskC = Container.maskC;
+    isC = Container.isC;
+    maskL1 = Container.maskL1;
+    isL1 = Container.isL1;
+    maskL2 = Container.maskL2;
+    isL2 = Container.isL2;
+    maskR1 = Container.maskR1;
+    isR1 = Container.isR1;
+    maskR2 = Container.maskR2;
+    isR2 = Container.isR2;
+    
     maskCI = false(size(maskC));
     maskL1I = false(size(maskC));
     maskL2I = false(size(maskC));
@@ -46,4 +57,9 @@ function [maskCI, maskL1I, maskL2I, maskR1I, maskR2I] = generate_bwconvhull(mask
                 maskR2I = maskI;
         end   
     end
+    Container.maskCI = maskCI;
+    Container.maskL1I = maskL1I;
+    Container.maskL2I = maskL2I;
+    Container.maskR1I = maskR1I;
+    Container.maskR2I = maskR2I;
 end

@@ -1,9 +1,15 @@
-function [color_square, y_c, isDone] = checkbadthings(color_square, Threshold, op_th, y, x, cond)
+function [color_square, y_c, isDone] = checkbadthings(color_square, Threshold, op_th, y, x, transtions, obj_idx, chess_idx, cond)
     ymean = mean(abs(y(:,1)-y(:,2)));
     ratio = abs(x(1)-x(2))/ymean;
     CC = bwconncomp(color_square);
     y_c = [];
-    isDone = ratio < 0.2 && (CC.NumObjects < 3 || cond) && CC.NumObjects ~=0;
+    idx = find(transtions(:,1)==obj_idx & transtions(:,2)==chess_idx, 1);
+    direction = transtions(idx,3);
+    % Quando non devo farlo.
+    % Sono due e sono buoni, sono 3 e sono buoni, è uno ed è alto giusto è
+    % se è nell'intersezione?
+    isDone = ~isempty(idx);
+%    isDone = ratio < 0.2 && (CC.NumObjects < 3 || cond) && CC.NumObjects ~=0;
     % Se ho esattamente due blob erodi solo se il ratio non è minore di una
     % certa soglia, quindi non è un quadrato
     if(CC.NumObjects == 2)

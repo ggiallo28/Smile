@@ -11,6 +11,19 @@ function obj_chess = completeComputeChess(obj_chess, transtions, Container)
         y = obj.bbox_y;
         BW = obj.raw_bw;
         maskedRGBImage = obj.raw_maskedRGBImage;
+%% Remove bad things
+        for i = 1:size(x,1)
+            mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
+            mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
+            color_square =  BW&mask;
+            [color_square, yy, isDone] = checkbadthings(color_square, Threshold, op_th, y, x(i,:), transtions, kk, i, false);
+            if ( isDone )
+                BW(y(i,1):y(i,2),x(i,1):x(i,2)) = color_square(y(i,1):y(i,2),x(i,1):x(i,2));
+                y(i,:) = yy;
+            end
+        end
+%% Adjust 2 squares
+        [BW, y] = twosquares_adjust(x, y, BW);
     	%% Calcolo della chessboard complementare & background
         [inv_BW, blackwhite_BW, colors, obj] = compute_dualchessboard(x, y, BW, RGB, obj, size(BW));
         % Fix dei triangoli del background DA RIMUOVERE

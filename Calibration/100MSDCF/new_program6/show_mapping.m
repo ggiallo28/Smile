@@ -1,4 +1,7 @@
-function show_mapping(obj_chess, I)
+function show_mapping(Container)
+I = Container.I;
+obj_chess = Container.obj_chess;
+
     for l=1:size(obj_chess,1)
         if ( ~obj_chess(l).isEmpty )
             for i=1:size(obj_chess(l).chess(1).intersections_x,1)

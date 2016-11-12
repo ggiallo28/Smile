@@ -1,4 +1,11 @@
-function [maskC, isC, maskL1, isL1, maskL2, isL2, maskR1, isR1, maskR2, isR2] = generate_mask(obj_chess, label, order, positions, types, dimensions)
+function Container = generate_mask(Container)
+    obj_chess = Container.obj_chess;
+    label = Container.label;
+    order = Container.order;
+    positions = Container.positions;
+    types = Container.types;
+    dimensions = Container.img_dim;
+    
     maskC  = false(dimensions(1),dimensions(2));
     maskL1 = false(dimensions(1),dimensions(2));
     maskL2 = false(dimensions(1),dimensions(2));
@@ -138,4 +145,14 @@ function [maskC, isC, maskL1, isL1, maskL2, isL2, maskR1, isR1, maskR2, isR2] = 
         maskR2 = bwareaopen(maskR2,round(0.1*(mean(statsR2)-std(statsR2))));
         figure, imshow(maskR2);
     end
+    Container.maskC = maskC;
+    Container.isC = isC;
+    Container.maskL1 = maskL1;
+    Container.isL1 = isL1;
+    Container.maskL2 = maskL2;
+    Container.isL2 = isL2;
+    Container.maskR1 = maskR1;
+    Container.isR1 = isR1;
+    Container.maskR2 = maskR2;
+    Container.isR2 =isR2;
 end
