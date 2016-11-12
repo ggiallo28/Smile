@@ -3,7 +3,11 @@ function [obj] = computeChess(Container, bw, hist_size, output_minima_mid, band)
     warning off
     RGB = Container.I;
     Threshold = Container.Threshold;
-    op_th = Container.op_th;
+%    op_th = Container.op_th;
+%         y_mean = mean(abs(y(:,1)-y(:,2)));
+%     % x_min = min(abs(x(:,1)-x(:,2)));
+%     % Threshold = round(0.2*y_mean*0.5*x_min);
+%     Threshold = round(5*y_mean);
 %% LOGIC
     [maskedRGBImage, BW] = createColorMask(RGB, bw, output_minima_mid, Threshold, hist_size, band);
     obj = objBlobs(band);
@@ -16,7 +20,7 @@ function [obj] = computeChess(Container, bw, hist_size, output_minima_mid, band)
     end
     [x, y] = compute_projections(BW, split);
 %% Checkerboard Filtering
-    [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, op_th);
+    [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, Container.size_square);
     obj.bbox_x = x;
     obj.bbox_y = y;
 %% RAW Elements for separation

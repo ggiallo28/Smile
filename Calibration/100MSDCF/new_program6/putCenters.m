@@ -8,13 +8,12 @@ function obj = putCenters(obj, xOffset, yOffset, centers, index, img_dim)
         y(i) = v(2);
     end 
     obj.chess(index).centroid = [xOffset+mean(x), yOffset+mean(y)];
+    [x, idx] = sort(x);
+    y = y(idx);
     Lines = fliplr(obj.chess(index).h_lines);
     for j=1:size(obj.chess(index).h_lines,2)-1
         lineT = Lines{j};
         lineB = Lines{j+1};
-        imshow(obj.color_mask); hold on;
-        plot(lineT);
-        plot(lineB);
         ii = 1;
         for i=1:size(x,2)
             yT = lineT(xOffset+x(i));
@@ -22,10 +21,13 @@ function obj = putCenters(obj, xOffset, yOffset, centers, index, img_dim)
             if((yOffset+y(i))>yT && (yOffset+y(i))<yB)
                 obj.chess(index).center_x(j,ii) = xOffset+x(i);
                 obj.chess(index).center_y(j,ii) = yOffset+y(i);
-                hold on; scatter(obj.chess(index).center_x(j,ii),obj.chess(index).center_y(j,ii))
                 ii = ii + 1;
             end
         end
+        imshow(obj.color_mask); hold on;
+        plot(lineT);
+        plot(lineB);
+        hold on; scatter(obj.chess(index).center_x(j,:),obj.chess(index).center_y(j,:))
     end
 %     while(size(x,2)>0 && size(y,2) >0)
 %         

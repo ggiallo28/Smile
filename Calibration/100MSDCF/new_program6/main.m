@@ -12,7 +12,8 @@ Container = objContainer();
 %% Parametri
 Container.confidence = 2.8;
 Container.img_dim  = size(Container.I);
-Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
+%Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
+Container.fraction = 20;
 Container.mpd = 30;
 Container.windowSize = 9; % 6
 Container.op_th = 15;
@@ -32,8 +33,10 @@ hsv = rgb2hsv(RGB);
 % Non sono in grado d distinguere tra il viola e il rosso, tra l'azzurro e il blu, quindi 4 cluster invece che 6
 figure, imshow(imread('hsv.jpg'));
 %% Stima la dimensione del quadrato più grande
-
-%% Segmentazione RGB, hist_size, output_minima_mid, Threshold, band
+Container = th_estimation(Container, bw);
+% bisogna farlo per ogni riflesso siccome il massimo quadrato ha dimensione
+% diversa
+%% Segmentazione
 obj_red = computeChess(Container, bw, hist_size, output_minima_mid, 'red');
 obj_green = computeChess(Container, bw, hist_size, output_minima_mid, 'green');
 obj_blue = computeChess(Container, bw, hist_size, output_minima_mid, 'blue');

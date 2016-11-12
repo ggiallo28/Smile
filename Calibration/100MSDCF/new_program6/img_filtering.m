@@ -1,9 +1,7 @@
-function [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, op_th)
-    y_mean = mean(abs(y(:,1)-y(:,2)));
-    % x_min = min(abs(x(:,1)-x(:,2)));
-    % Threshold = round(0.2*y_mean*0.5*x_min);
-    Threshold = round(5*y_mean);
+function [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, size_square)
     ii = [];
+    y_mean = mean(abs(y(:,1)-y(:,2)));
+    y_mean = mean([y_mean, sqrt(size_square)*5]);
     for i = 1:size(x,1)
         mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
         mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;

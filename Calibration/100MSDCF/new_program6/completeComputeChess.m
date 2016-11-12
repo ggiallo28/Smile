@@ -97,6 +97,9 @@ function obj_chess = completeComputeChess(obj_chess, transtions, Container)
         end
         
         %% Fix positions
+        if(strcmp(obj.name,'red'))
+            disp('fuck');
+        end
         obj = fix_positions(x, obj, BW, false);
         %% Se su una stessa riga ho un centroide in più rimuovilo
         for i=1:size(obj.chess,2)

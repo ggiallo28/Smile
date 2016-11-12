@@ -3,6 +3,7 @@ function obj = fix_positions(x, obj, BW, toFix)
         X = obj.chess(i).center_x;
         Y = obj.chess(i).center_y;
         ind = find(obj.chess(i).center_x==0);
+        count_zero = size(ind,1);
         [id_row,id_col]=ind2sub(size(X),ind);
         X(id_row,:) = 0;
         Y(id_row,:) = 0;
@@ -26,11 +27,11 @@ function obj = fix_positions(x, obj, BW, toFix)
         % le tessere mancanti
         for k=1:size(id_row,1)
             row_Xchess = obj.chess(i).center_x(id_row(k),:);
+            index = 1:size(row_Xchess,2);
             row_Ychess = obj.chess(i).center_y(id_row(k),:);
             row_Xchess(row_Xchess ==0) = [];
             row_Ychess(row_Ychess ==0) = [];
             row_X = X(id_row(k),:);
-            index = 1:size(row_Xchess,2);
             for j=1:size(row_Xchess,2)
                 curr_val_x = row_Xchess(j);
                 curr_val_y = row_Ychess(j);
@@ -45,9 +46,10 @@ function obj = fix_positions(x, obj, BW, toFix)
         end  
         obj.chess(i).center_x = X;
         obj.chess(i).center_y = Y;
+        ind = find(obj.chess(i).center_x==0);
+        assert(count_zero == size(ind,1),'Errore nella fix positions');
         if toFix
             figure,imshow(BW); hold on;
-            ind = find(obj.chess(i).center_x==0);
             while(size(ind,1)>0)
                 %       mod(4,2)   % Even  number
                 %       ans = 0
