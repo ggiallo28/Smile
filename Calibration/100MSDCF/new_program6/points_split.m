@@ -86,6 +86,7 @@ function Container = points_split(Container, pointsArray)
     %         end
             imshow([I;repmat(255.*ch_mask,1,1,3)]); hold on;
             scatter(x_cj_matrix_copy(:),y_rj_matrix_copy(:));
+            pause(1)
         end    
     end
     Container.obj_chess = obj_chess;

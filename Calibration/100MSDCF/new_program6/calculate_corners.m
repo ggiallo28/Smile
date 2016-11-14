@@ -130,14 +130,26 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
         gapGRIDLeft = line2image(obj_chess(id_obj_chess(1)).chess(id_chess(1)).v_lines{1},size(mask));
         gapGRIDRight = line2image(obj_chess(id_obj_chess(end)).chess(id_chess(end)).v_lines{end},size(mask));
         [GRIDhh, GRIDh] = getHImage(grid_pos,grid_typ,obj_chess, order, label, size(maskI), maskI);
-        GRIDh_filled = filledgegaps(GRIDh.*imerode(maskI,strel('rectangle',[30,2])),30);
-        CC_GRIDh = bwconncomp(GRIDh_filled,8);
-        figure, imshow(GRIDh_filled); hold on
+        GRIDh = filledgegaps(GRIDh.*imerode(maskI,strel('rectangle',[30,2])),30);
+        condition = true;
+        percent = 0.2;
+        while condition
+            GRIDh = bwareaopen(GRIDh,round(percent*sqrt(Container.size_small))); % Parametro
+            % Togliere sta cosa e controllare di avere 4 linee, scegliere
+            % quelle che sono fittate con più punti e che hanno coefficente
+            % angolare più piccolo poichè orizontali, oppure semplicemente se
+            % so di più erodi maggiormente sopra e sotto
+            CC_GRIDh = bwconncomp(GRIDh,8);
+            condition = CC_GRIDh.NumObjects ~=4; % Legato al numero di quadrati, se so 5 ho 4 linee in mezzo.
+            percent = percent + 0.01;
+        end
+        figure, imshow(GRIDh); hold on
         for h_count=1:CC_GRIDh.NumObjects
             [circley,circlex] = ind2sub(size(mask),CC_GRIDh.PixelIdxList{h_count}); 
              horizontalCell{i,h_count} = createLine(circlex,circley);
              plot(horizontalCell{i,h_count});
         end
+        
         hold off
 
         GRIDvv = getVImage(bwV, maskI, GRIDh);
@@ -216,16 +228,34 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
         end
     % Provo con la funzione di matlab, se questa non rintraccia alcuni punti
     % allora provo con il mio metodo
-    %    [imagePoints,boardSize] = detectCheckerboardPoints(I.*repmat(uint8(maskI),1,1,3));
+        [imagePoints,~] = detectCheckerboardPoints(I.*repmat(uint8(maskI),1,1,3));
     % Orizzontale 
         R = im2double(I(:,:,1)); G = im2double(I(:,:,2)); B = im2double(I(:,:,3));
         GRIDv2 = imdilate(image_line,strel('disk',10));
         MINRGB = min(R,G); MINRGB = min(MINRGB,B);
         MAXRGB = max(R,G); MAXRGB = max(MAXRGB,B);
         gray = 0.5*MINRGB+0.5*MAXRGB;
-        sep_mask = GRIDv2.*imdilate(GRIDh,strel('disk',10));
+        gray = imadjust(im2double(rgb2gray(I)));
+        sep_mask = GRIDv2.*imdilate(GRIDh,strel('disk',15));
         sep_squares = gray.*sep_mask;
         sep_squares = sep_squares.*bwareaopen(sep_squares>0,10);
+        CC = bwconncomp(sep_squares>0,8);
+        mask_sep_squares = sep_squares>0; ii = []; points_pos_image = false(size(mask_sep_squares));
+        for points_i=1:size(imagePoints,1)
+            points_pos = logical(rgb2gray(insertMarker(zeros(size(mask_sep_squares)),imagePoints(points_i,:),'size',1)));
+            if(sum(sum(points_pos.*mask_sep_squares))==0)
+                ii = [ii,points_i];
+            end 
+            points_pos_image = (points_pos_image | points_pos).*mask_sep_squares;
+        end
+        imagePoints(ii,:) = [];
+        for l=1:CC.NumObjects
+            points_pos = false(size(mask_sep_squares));
+            points_pos(CC.PixelIdxList{l}) = 1;
+            if(sum(sum(points_pos_image.*points_pos)) > 0)
+                sep_squares(CC.PixelIdxList{l}) = 0;
+            end
+        end
         CC = bwconncomp(sep_squares>0,8);
     %     for l=1:CC.NumObjects
     %         if(isFound(imagePoints,CC.PixelIdxList{l},size(sep_squares)))
@@ -244,10 +274,12 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
             %figure, imshow(tmp), hold on, scatter(dot(:,1),dot(:,2))
             P = [P;min(cutR)+dot(:,2),min(cutC)+dot(:,1)];      
             if(isempty(dot))
+                figure
                 while(condition && th>0)
                     bw_tmp = im2bw(tmp,th);
                     th = th-0.01;
-                    CC_tmp = bwconncomp(bw_tmp,4);        
+                    CC_tmp = bwconncomp(bw_tmp,4);
+                    imshow(bw_tmp);
                     if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)
                         condition = false;
                         [blob1y,blob1x] = ind2sub(size(tmp),store{1});
@@ -285,6 +317,7 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                     P = [P;min(cutR)+YY,min(cutC)+XX];        
             end
         end
+        P = [P;[imagePoints(:,2),imagePoints(:,1)]];
         figure, imshow(I), hold on, scatter(P(:,2),P(:,1));
         [y_rj_matrix, x_cj_matrix] = orderPoints(P, horizontalCell(i,:), verticalCell(i,:), maskI);
         pointsArray.x_points{i} = x_cj_matrix;

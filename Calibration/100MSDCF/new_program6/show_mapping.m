@@ -13,10 +13,12 @@ obj_chess = Container.obj_chess;
                         vect_x = [vect_x, obj_chess(l).chess(k).intersections_x(i,j)];
                         vect_y = [vect_y, obj_chess(l).chess(k).intersections_y(i,j)];
                     end
-                    obj_chess(l).chess(1).h_matrix(i,j)
-                    obj_chess(l).chess(1).angle_matrix(i,j)
-                    scatter(vect_x(:),vect_y(:)); hold off
-                    pause
+                    if(size(vect_x,2) > 1 || size(vect_x,2) == 1 && vect_x(1) ~= 0)
+                        obj_chess(l).chess(1).h_matrix(i,j)
+                        obj_chess(l).chess(1).angle_matrix(i,j)
+                        scatter(vect_x(:),vect_y(:)); hold off
+                        pause
+                    end
                 end
             end
         end

@@ -134,13 +134,13 @@ function Container = split_refletions(Container, fuse, checker_vector)
                                 % Sfruttiamo il checker vector, se i colori sono invertiti rispetto all'ordine originale allora
                                 % abbiamo un riflesso primario, altrimenti abbiamo un riflesso secondario. 
                                 check = checker_vector(2,:,:);
-                                ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                                jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
-                                if(ii==1 && jj == size(check,2))
+                                prev = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                                curr = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
+                                if(prev==1 && curr == size(check,2))
                                     obj_chess(l).chess(i).type = types(1);
-                                elseif (ii==size(check,2) && jj ==1)
+                                elseif (prev==size(check,2) && curr ==1)
                                     obj_chess(l).chess(i).type = types(2);
-                                elseif(jj>ii)
+                                elseif( prev < curr )
                                     obj_chess(l).chess(i).type = types(2);
                                 else
                                     obj_chess(l).chess(i).type = types(1);
@@ -148,13 +148,13 @@ function Container = split_refletions(Container, fuse, checker_vector)
                             else
                                 color = name2code(obj_chess(order(1,idx+1)).name);
                                 check = checker_vector(2,:,:);
-                                ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                                jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
-                                if(ii == size(check,2) && jj == 1)
+                                next = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                                curr = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));                   
+                                if(next == size(check,2) && curr == 1)
                                     obj_chess(l).chess(i).type = types(1);
-                                elseif (ii==1 && jj == size(check,2))
+                                elseif (next==1 && curr == size(check,2))
                                     obj_chess(l).chess(i).type = types(2);
-                                elseif(jj<ii)
+                                elseif(curr < next)
                                      obj_chess(l).chess(i).type = types(2);
                                 else
                                      obj_chess(l).chess(i).type = types(1);
@@ -164,13 +164,13 @@ function Container = split_refletions(Container, fuse, checker_vector)
                             if (idx~=size(order,2))
                                 color = name2code(obj_chess(order(1,idx+1)).name);
                                 check = checker_vector(2,:,:);
-                                ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                                jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
-                                if(ii == size(check,2) && jj == 1)
+                                next = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                                curr = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
+                                if(next == size(check,2) && curr == 1)
                                     obj_chess(l).chess(i).type = types(1);
-                                elseif (ii==1 && jj == size(check,2))
+                                elseif (next==1 && curr == size(check,2))
                                     obj_chess(l).chess(i).type = types(2);
-                                elseif(jj<ii)
+                                elseif(curr < next)
                                      obj_chess(l).chess(i).type = types(2);
                                 else
                                      obj_chess(l).chess(i).type = types(1);
@@ -178,13 +178,13 @@ function Container = split_refletions(Container, fuse, checker_vector)
                             else
                                 color = name2code(obj_chess(order(1,idx-1)).name);
                                 check = checker_vector(2,:,:);
-                                ii = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
-                                jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
-                                if(ii==1 && jj == size(check,2))
+                                prev = find(check(:,:,1) == color(1) & check(:,:,2) == color(2) & check(:,:,3) == color(3));
+                                curr = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
+                                if(prev==1 && curr == size(check,2))
                                     obj_chess(l).chess(i).type = types(1);
-                                elseif (ii==size(check,2) && jj ==1)
+                                elseif (prev==size(check,2) && curr ==1)
                                     obj_chess(l).chess(i).type = types(2);
-                                elseif(jj>ii)
+                                elseif(prev < curr)
                                      obj_chess(l).chess(i).type = types(2);
                                 else
                                      obj_chess(l).chess(i).type = types(1);

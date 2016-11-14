@@ -25,9 +25,10 @@ function obj = putCenters(obj, xOffset, yOffset, centers, index, img_dim)
             end
         end
         imshow(obj.color_mask); hold on;
-        plot(lineT);
-        plot(lineB);
+        plot(lineT); l1 = legend(); set(l1,'visible','off');
+        plot(lineB); l1 = legend(); set(l1,'visible','off');
         hold on; scatter(obj.chess(index).center_x(j,:),obj.chess(index).center_y(j,:))
+        l1 = legend(); set(l1,'visible','off');
     end
 %     while(size(x,2)>0 && size(y,2) >0)
 %         

@@ -184,7 +184,7 @@ hist_size = size(h,1);
 %     [output_peak, output_minima_low, output_minima_high , output_mid, hist_size] = findlocalminima(I,mpd+1,windowSize,refine, isPeriodic);
 %     return;
 % end
-assert(size(output_peak,2) == 4 | size(output_peak,2) == 5);
+
 if(size(output_peak,2)==5)
     output_mid(1) = output_peak(1)+0.5*(output_peak(2)-output_peak(1));
     output_mid(2) = output_peak(2)+0.5*(output_peak(3)-output_peak(2));
@@ -206,6 +206,7 @@ hold on
 plot(output_peak,h1(output_peak),'*');
 plot(output_minima_low,h1(output_minima_low),'or');
 plot(output_minima_high,h1(output_minima_high),'ob');
+assert(size(output_peak,2) == 4 | size(output_peak,2) == 5);
 plot(round(output_mid),h1(round(output_mid)),'og');
 hold off
 axis tight

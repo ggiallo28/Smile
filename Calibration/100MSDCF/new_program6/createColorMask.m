@@ -8,7 +8,7 @@ function [maskedRGBImage, BW] = createColorMask(RGB, bw, output_minima_mid, Thre
             red_th_max = output_minima_mid(4)/hist_size;
             bw_red = (hsv_inImg(:,:,1)<=red_th_min | hsv_inImg(:,:,1)>=red_th_max) & bw;
             bw_red = bwareaopen(bw_red,Threshold);
-            figure, imshow(RGB.*repmat(bw_red,[1 1 3]));
+%            figure, imshow(RGB.*repmat(bw_red,[1 1 3]));
             BW = bwareaopen(bw_red, 300); % Parametro
             BW2 =  imdilate(BW,strel('square',10));
             BW2 = bwareaopen(BW2, 2000); % Parametro
@@ -51,7 +51,7 @@ function [maskedRGBImage, BW] = createColorMask(RGB, bw, output_minima_mid, Thre
             green_th_max = output_minima_mid(3)/hist_size;
             bw_green = hsv_inImg(:,:,1)>=green_th_min & hsv_inImg(:,:,1)<=green_th_max & bw;
             bw_green = bwareaopen(bw_green,Threshold);
-            figure, imshow(RGB.*repmat(bw_green,[1 1 3]));
+%            figure, imshow(RGB.*repmat(bw_green,[1 1 3]));
             BW = bwareaopen(bw_green, 300); % Parametro
             BW2 =  imdilate(BW,strel('square',10));
             BW2 = bwareaopen(BW2, 2000); % Parametro
@@ -94,7 +94,7 @@ function [maskedRGBImage, BW] = createColorMask(RGB, bw, output_minima_mid, Thre
             bw_blu = hsv_inImg(:,:,1)>=blu_th_min & hsv_inImg(:,:,1)<=blu_th_max & bw;
             bw_blu = bwareaopen(bw_blu,Threshold);
             bw_blu = imclose(bw_blu,strel('square',10));
-            figure, imshow(RGB.*repmat(bw_blu,[1 1 3]));
+%            figure, imshow(RGB.*repmat(bw_blu,[1 1 3]));
             % Initialize output masked image based on input image.
             BW = bwareaopen(bw_blu, 300); % Parametro
             BW2 =  imdilate(BW,strel('square',10));
@@ -137,7 +137,7 @@ function [maskedRGBImage, BW] = createColorMask(RGB, bw, output_minima_mid, Thre
             yellow_th_max = output_minima_mid(2)/hist_size;
             bw_yellow = hsv_inImg(:,:,1)>=yellow_th_min & hsv_inImg(:,:,1)<=yellow_th_max & bw;
             bw_yellow = bwareaopen(bw_yellow,Threshold);
-            figure, imshow(RGB.*repmat(bw_yellow,[1 1 3]));
+%            figure, imshow(RGB.*repmat(bw_yellow,[1 1 3]));
             BW = bwareaopen(bw_yellow, 300); % Parametro
             BW2 =  imdilate(BW,strel('square',10));
             BW2 = bwareaopen(BW2, 2000); % Parametro

@@ -23,6 +23,8 @@ function fuse = show_result(Container)
                         scatter(obj.chess(i).center_x(k,j),obj.chess(i).center_y(k,j)) % Riferimento Y verso il basso
                     end
                     plot(obj.chess(i).v_lines_centroid{j});
+                    l1 = legend();
+                    set(l1,'visible','off');
                 end       
             end
         end

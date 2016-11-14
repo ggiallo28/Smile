@@ -12,7 +12,8 @@ function [obj] = computeChess(Container, bw, hist_size, output_minima_mid, band)
     [maskedRGBImage, BW] = createColorMask(RGB, bw, output_minima_mid, Threshold, hist_size, band);
     obj = objBlobs(band);
 %% Separazione delle chessboard
-    split = sum(BW);
+    BW = bwareaopen(BW,Threshold);
+    split = medfilt2(sum(BW),[1,10]);
     split = find(split~=0);
     if size(split,2) == 0
         obj.isEmpty = true;
@@ -20,7 +21,8 @@ function [obj] = computeChess(Container, bw, hist_size, output_minima_mid, band)
     end
     [x, y] = compute_projections(BW, split);
 %% Checkerboard Filtering
-    [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, Container.size_square);
+    [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, Container.size_square, Threshold);
+    figure, imshow(im2double(Container.I).*repmat(BW,[1 1 3]));
     obj.bbox_x = x;
     obj.bbox_y = y;
 %% RAW Elements for separation

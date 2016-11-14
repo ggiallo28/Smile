@@ -1,4 +1,4 @@
-function [BW, y] = twosquares_adjust(x, y, BW)
+function [BW, y] = twosquares_adjust(x, y, BW, RGB)
 % Funzione che risolvere gestisce la situazione in cui abbiamo solo due componenti connesse all'interno di una sezione, cioè quando abbiamo solo i due quadrati intermedi.
 % per calcolare la maschera complementare dobbiamo simulare quello di sotpra e quello di sotto altrimenti la regione sarebbe ritagliata troppo piccola.
     for i=1:size(x,1)

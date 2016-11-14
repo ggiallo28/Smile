@@ -15,31 +15,10 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     color_square_bb = color_square_bb.BoundingBox; imshow(color_square); hold on
     plot([color_square_bb(1) color_square_bb(1)+color_square_bb(3)  color_square_bb(1)+color_square_bb(3)...
     color_square_bb(1) color_square_bb(1)],[color_square_bb(2)  color_square_bb(2) color_square_bb(2)+color_square_bb(4)...
-    color_square_bb(2)+color_square_bb(4) color_square_bb(2)]);
+    color_square_bb(2)+color_square_bb(4) color_square_bb(2)]); l1 = legend(); set(l1,'visible','off');
     color_square_edge_v = abs(imfilter(imfill(color_square,'holes'),[-1 0 1])) + abs(imfilter(imfill(color_square,'holes'),[1 0 -1]));
     color_square_edge_h = abs(imfilter(imfill(color_square,'holes'),[1 0 -1]'))+abs(imfilter(imfill(color_square,'holes'),[-1 0 1]'));
-    % https://kyamagu.github.io/mexopencv/matlab/minAreaRect.html
-    [idr,idc] = ind2sub(size(color_square),find(imfill(color_square,'holes')==1));
-    rct = cv.minAreaRect([idr,idc]);
-    %ROTATED RECTANGLE
-    Cx = rct.center(2); Cy = rct.center(1); %the coordinates of your center point in world coordinates
-    W = rct.size(2); % the width of your rectangle
-    H = rct.size(1); % the height of your rectangle
-    theta = -deg2rad(rct.angle); % the angle you wish to rotate
-    %The offset of a corner in local coordinates (i.e. relative to the pivot point) (which corner will depend on the coordinate reference system used in your environment)
-    Ox = W / 2;
-    Oy = H / 2;
-    % The rotated position of this corner in world coordinates 
-    imshow(color_square); hold on;
-    P1 = [Cx + (Ox  * cos(theta)) - (Oy * sin(theta)), Cy + (Ox  * sin(theta)) + (Oy * cos(theta))];
-    P2 = [Cx - (Ox  * cos(theta)) - (Oy * sin(theta)), Cy - (Ox  * sin(theta)) + (Oy * cos(theta))];
-    P3 = [Cx - (Ox  * cos(theta)) + (Oy * sin(theta)), Cy - (Ox  * sin(theta)) - (Oy * cos(theta))];
-    P4 = [Cx + (Ox  * cos(theta)) + (Oy * sin(theta)), Cy + (Ox  * sin(theta)) - (Oy * cos(theta))];
-    plot([P1(1) P2(1)],[P1(2) P2(2)]);
-    plot([P1(1) P4(1)],[P1(2) P4(2)]);
-    plot([P4(1) P3(1)],[P4(2) P3(2)]);
-    plot([P3(1) P2(1)],[P3(2) P2(2)]);
-    [LTp, RTp, LBp, RBp] = sortPoints(P1,P2,P3,P4,Cy);  
+    [LTp, RTp, LBp, RBp]  = getRotatedRectangle(color_square);
     [rct_line_left, ~] = createLine([LBp(2) LTp(2)],[LBp(1) LTp(1)]); % Al contrario perchè ho necessità di sostituire la y
     [rct_line_right, ~] = createLine([RBp(2) RTp(2)],[RBp(1) RTp(1)]);
     [rct_line_left_test, ~] = createLine([LBp(1) LTp(1)],[LBp(2) LTp(2)]);
@@ -92,14 +71,14 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     if(isDone)
         fitresult_top = fitresult_top_tmp;
     end
-    plot(fitresult_top);
+    plot(fitresult_top); l1 = legend(); set(l1,'visible','off');  
     [idx_bot,idy_bot]=ind2sub(size(color_square),ccbot);
     [fitresult_bot, ~] = createLine(idy_bot,idx_bot);
     [fitresult_bot_tmp, isDone] = adjustLine(fitresult_bot,idy_bot,idx_bot);
     if(isDone)
         fitresult_bot = fitresult_bot_tmp;
     end
-    plot(fitresult_bot);
+    plot(fitresult_bot); l1 = legend(); set(l1,'visible','off');
 %% HORIZONTAL 2
     yLB = fitresult_bot(x1);
     yRB = fitresult_bot(x2);
@@ -108,13 +87,13 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     yLL = linspace(yLB,yLT,6);
     yRR = linspace(yRB,yRT,6);
     [line1, ~] = createLine([x1 x2],[yLL(2) yRR(2)]);
-    plot(line1);   
+    plot(line1); l1 = legend(); set(l1,'visible','off');  
     [line2, ~] = createLine([x1 x2],[yLL(3) yRR(3)]);
-    plot(line2);
+    plot(line2); l1 = legend(); set(l1,'visible','off');  
     [line3, ~] = createLine([x1 x2],[yLL(4) yRR(4)]);
-    plot(line3);
+    plot(line3); l1 = legend(); set(l1,'visible','off');  
     [line4, ~] = createLine([x1 x2], [yLL(5) yRR(5)]);
-    plot(line4);
+    plot(line4); l1 = legend(); set(l1,'visible','off');  
     chess.h_lines = cell(1,6);
     chess.h_lines{1} = fitresult_bot;
     chess.h_lines{2} = line1;
@@ -182,12 +161,16 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     
     [fitresult_left, ~] = createLineInv(idx_left,idy_left,size(color_square));
     plot(fitresult_left);
+    l1 = legend();
+    set(l1,'visible','off');
     [idx_right,idy_right]=ind2sub(size(color_square),ccright);
     [fitresult_right, ~] = createLineInv(idx_right,idy_right,size(color_square));
     plot(fitresult_right);
     chess.v_lines = cell(1,2);
     chess.v_lines{1} = fitresult_left;
     chess.v_lines{2} = fitresult_right;
+    l1 = legend();
+    set(l1,'visible','off');
 %% PLOT   
     xx = -40:0.001:size(color_square,2)+40;
     [~,ii] = min(abs(fitresult_bot(xx(:)) - fitresult_left(xx(:))));

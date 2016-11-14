@@ -12,18 +12,28 @@ function obj_chess = completeComputeChess(obj_chess, transtions, Container)
         BW = obj.raw_bw;
         maskedRGBImage = obj.raw_maskedRGBImage;
 %% Remove bad things
+        ii = [];
         for i = 1:size(x,1)
             mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
             mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
             color_square =  BW&mask;
-            [color_square, yy, isDone] = checkbadthings(color_square, Threshold, op_th, y, x(i,:), transtions, kk, i, false);
-            if ( isDone )
+            [color_square, yy, xx, isDone, isErased] = checkbadthings(color_square, Threshold,y, x(i,:), transtions, kk, i);
+            if ( isDone & ~isErased)
                 BW(y(i,1):y(i,2),x(i,1):x(i,2)) = color_square(y(i,1):y(i,2),x(i,1):x(i,2));
                 y(i,:) = yy;
+                x(i,:) = xx;
+            end
+            if ( isErased )
+                ii = [ii,i];
             end
         end
+        y(ii,:) = [];
+        x(ii,:) = [];
+        obj.chess(ii) = [];
+        obj.bbox_x = x;
+        obj.bbox_y = y;
 %% Adjust 2 squares
-        [BW, y] = twosquares_adjust(x, y, BW);
+        [BW, y] = twosquares_adjust(x, y, BW, RGB);
     	%% Calcolo della chessboard complementare & background
         [inv_BW, blackwhite_BW, colors, obj] = compute_dualchessboard(x, y, BW, RGB, obj, size(BW));
         % Fix dei triangoli del background DA RIMUOVERE
