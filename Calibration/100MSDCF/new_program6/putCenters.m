@@ -1,4 +1,4 @@
-function obj = putCenters(obj, xOffset, yOffset, centers, index, img_dim)
+function obj = putCenters(obj, xOffset, yOffset, centers, index, Container)
     arr= struct2cell(centers);
     x = zeros(1,size(centers,1));
     y = zeros(1,size(centers,1));
@@ -23,6 +23,12 @@ function obj = putCenters(obj, xOffset, yOffset, centers, index, img_dim)
                 obj.chess(index).center_y(j,ii) = yOffset+y(i);
                 ii = ii + 1;
             end
+        end
+        if(size(obj.chess(index).center_x(j,:),1) < Container.num_square)
+            dim = size(obj.chess(index).center_x);
+            pad = zeros(Container.num_square-dim(1),dim(2));
+            obj.chess(index).center_x = [obj.chess(index).center_x;pad];
+            obj.chess(index).center_y = [ obj.chess(index).center_y;pad];
         end
         imshow(obj.color_mask); hold on;
         plot(lineT); l1 = legend(); set(l1,'visible','off');

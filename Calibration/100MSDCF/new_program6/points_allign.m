@@ -41,13 +41,13 @@ function Container = points_allign(Container)
                 idl = find(order(1,:)==l);
                 idq = find(order(2,:)==q);
                 idx_order = intersect(idl,idq);
-                if(hasLeft(label,idx_order))
+                if(hasLeft(label,idx_order, Container))
                   obj_chess(l).chess(q).intersections_x = ...
                       allignleftdouble(obj_chess(l).chess(q).intersections_x);
                   obj_chess(l).chess(q).intersections_y = ...
                       allignleftdouble(obj_chess(l).chess(q).intersections_y);
                 end
-                if(hasRight(label,idx_order))
+                if(hasRight(label,idx_order, Container))
                    obj_chess(l).chess(q).intersections_x = ...
                        allignrightdouble(obj_chess(l).chess(q).intersections_x);
                    obj_chess(l).chess(q).intersections_y = ...

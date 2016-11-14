@@ -100,7 +100,7 @@ function obj_chess = completeComputeChess(obj_chess, transtions, Container)
                 CC = bwconncomp(chess);
             end
             s = regionprops(CC,'centroid');
-            obj = putCenters(obj, x(i,1), y(i,1), s, i, size(chess,1));
+            obj = putCenters(obj, x(i,1), y(i,1), s, i, Container);
             obj.chess(i).mask = false(size(bwD));
             obj.chess(i).mask(y(i,1):y(i,2),x(i,1):x(i,2)) = chess;
             obj.chess(i).background = colors(i);

@@ -25,7 +25,7 @@ function [obj_chess, transitions] = getColorBoundary(obj_red, obj_green, obj_blu
         end
         bw = bw | obj_chess(j).raw_bw;
     end
-    bw = bwareaopen(bw,5*Container.Threshold);
+    bw = bwareaopen(imdilate(bw,strel('square',20)),5*Container.Threshold);
     split = medfilt2(sum(bw),[1,10]);
     split = find(split~=0);
     if size(split,2) == 0

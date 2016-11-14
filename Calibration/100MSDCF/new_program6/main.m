@@ -3,14 +3,15 @@ figure,imshow(imread('checkerboard.jpg'));
 checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
 path = '../foto/ultime/';
-name = ['DSC00',num2str(301)];
+name = ['DSC00',num2str(295)];
 orig = imread([path,name,'.JPG']);
-orig_bg = imread([path,'DSC00',num2str(306),'.JPG']);
+orig_bg = imread([path,'DSC00',num2str(296),'.JPG']);
 %% Normalizzazione
 Container = objContainer();
 [Container.I, Container.I_BG, Container.O, Container.O_BG, Container.BB] = normalize_image(orig, orig_bg);
 %% Parametri
-Container.confidence = 2.8;
+Container.num_square = 5;
+Container.confidence = 3;
 Container.img_dim  = size(Container.I);
 %Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
 Container.fraction = 20;
@@ -28,8 +29,10 @@ Gp = inImg(:,:,2); Gp = Gp(bw);
 Bp = inImg(:,:,3); Bp = Bp(bw);
 RGB = cat(3,Rp,Gp,Bp);
 hsv = rgb2hsv(RGB);
-[output_peak, output_minima_low, output_minima_high, output_minima_mid, hist_size] =...
-    findlocalminima(hsv(:,:,1),Container.mpd,Container.windowSize,0,1);
+[output_peak, output_minima_mid, hist_size ] = findpeaksandminima(hsv(:,:,1),Container.windowSize,Container.mpd);
+
+% [output_peak, output_minima_low, output_minima_high, output_minima_mid, hist_size] =...
+%     findlocalminima(hsv(:,:,1),Container.mpd,Container.windowSize,0,1);
 % Non sono in grado d distinguere tra il viola e il rosso, tra l'azzurro e il blu, quindi 4 cluster invece che 6
 figure, imshow(imread('hsv.jpg'));
 %% Stima la dimensione del quadrato più grande
@@ -93,10 +96,10 @@ pointsArray = calculate_corners(Container, left_center_axis, right_center_axis, 
 %% Divido i punti per ogni componente
 Container = points_split(Container, pointsArray);
 %% Padding delle matrici e allineamento
-Container = points_allign(Container);
+Container3 = points_allign(Container);
 %% Mapping sulla superficie del Manifold
-Container = generate_mapping(Container, checker_vector);
-show_mapping(Container);
+Container3 = generate_mapping(Container3, checker_vector);
+show_mapping(Container3);
 %% Calcolo angolo degli specchi
 % Pleft = [];
 % Pright = [];
