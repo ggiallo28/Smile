@@ -6,22 +6,24 @@ function [obj_chess, transitions] = getColorBoundary(obj_red, obj_green, obj_blu
     bw = false(dim(1),dim(2));
     for j=1:size(obj_chess,2)
         for i=1:size(obj_chess(j).chess,2)
-            raw_order = [raw_order,[j;i;obj_chess(j).chess(i).raw_centroid']];
-            if (strcmp(obj_chess(j).name,'red'))
-                if(strcmp(obj_chess(j).chess(i).background,'Black'))
-                    raw_label = [raw_label,{'magenta'}];
+            if ( ~obj_chess(j).isEmpty )
+                raw_order = [raw_order,[j;i;obj_chess(j).chess(i).raw_centroid']];
+                if (strcmp(obj_chess(j).name,'red'))
+                    if(strcmp(obj_chess(j).chess(i).background,'Black'))
+                        raw_label = [raw_label,{'magenta'}];
+                    else
+                        raw_label = [raw_label,{obj_chess(j).name}];
+                    end
+                elseif (strcmp(obj_chess(j).name,'blue'))
+                    if(strcmp(obj_chess(j).chess(i).background,'Black'))
+                        raw_label = [raw_label,{'cyan'}];
+                    else
+                        raw_label = [raw_label,{obj_chess(j).name}];
+                    end
                 else
                     raw_label = [raw_label,{obj_chess(j).name}];
-                end
-            elseif (strcmp(obj_chess(j).name,'blue'))
-                if(strcmp(obj_chess(j).chess(i).background,'Black'))
-                    raw_label = [raw_label,{'cyan'}];
-                else
-                    raw_label = [raw_label,{obj_chess(j).name}];
-                end
-            else
-                raw_label = [raw_label,{obj_chess(j).name}];
-            end  
+                end  
+            end
         end
         bw = bw | obj_chess(j).raw_bw;
     end

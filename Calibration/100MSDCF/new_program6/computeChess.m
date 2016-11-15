@@ -34,7 +34,7 @@ function [obj] = computeChess(Container, bw, hist_size, output_minima_mid, band)
     end
 %% Inizializza
     obj = init_dualchessboard(x,y,BW,RGB,obj,size(BW));
-
+    obj.isEmpty = false;
 
 
 

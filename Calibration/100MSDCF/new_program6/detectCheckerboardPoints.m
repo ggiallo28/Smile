@@ -469,7 +469,7 @@ I = im2single(Igray);
 % the value of sigma
 sigma = 2; 
 
-minCornerMetric = 0.1; % threshold for corner metric
+minCornerMetric = 0.15; % threshold for corner metric
 
 [points, boardSize] = detectCheckerboard(I, sigma, minCornerMetric);
 

@@ -9,6 +9,7 @@ function Container = generate_mapping(Container, checker_vector)
     % Ogni quadrante rappresenta 60°, quindi ad ogni punto corrisponde un angolo di 15°
     for l=1:size(obj_chess,1)
         if ( ~obj_chess(l).isEmpty )
+            disp(['Calculating ',obj_chess(l).name,'...']);
             axis_distance = axisdistance(obj_chess(l).name,checher_vector_with_axis);
             adjusted_distance = axis_distance-1*sign(axis_distance); % Se positivo togliamo 1, se negativo aggiungiamo 1, le tessere gialle e rosse stanno a distanza zero.        
             for i=1:size(obj_chess(l).chess(1).intersections_x,1)

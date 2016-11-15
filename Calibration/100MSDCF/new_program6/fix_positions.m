@@ -21,6 +21,9 @@ function obj = fix_positions(x, obj, BW, toFix)
             Y(:,k) = pchip(axis,value,1:5); 
         end
         if(size(find(X==0),1)>0 || size(find(Y==0),1)>0)
+            [X, Y] = fix_one_miss(obj.chess(i).center_x, obj.chess(i).center_y, X~=0);
+            obj.chess(i).center_x = X;
+            obj.chess(i).center_y = Y;
             continue
         end
         % trovo la posizione giusta degli zeri in funzione di quelle che sono

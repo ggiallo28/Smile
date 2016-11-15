@@ -1,17 +1,17 @@
 close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
-checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
+checker_vector = fliplr(reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]));
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
 path = '../foto/ultime/';
-name = ['DSC00',num2str(295)];
+name = ['DSC00',num2str(490)];
 orig = imread([path,name,'.JPG']);
-orig_bg = imread([path,'DSC00',num2str(296),'.JPG']);
+orig_bg = imread([path,'DSC00',num2str(489),'.JPG']);
 %% Normalizzazione
 Container = objContainer();
 [Container.I, Container.I_BG, Container.O, Container.O_BG, Container.BB] = normalize_image(orig, orig_bg);
 %% Parametri
 Container.num_square = 5;
-Container.confidence = 3;
+Container.confidence = 2.8;
 Container.img_dim  = size(Container.I);
 %Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
 Container.fraction = 20;
@@ -96,10 +96,10 @@ pointsArray = calculate_corners(Container, left_center_axis, right_center_axis, 
 %% Divido i punti per ogni componente
 Container = points_split(Container, pointsArray);
 %% Padding delle matrici e allineamento
-Container3 = points_allign(Container);
+Container = points_allign(Container);
 %% Mapping sulla superficie del Manifold
-Container3 = generate_mapping(Container3, checker_vector);
-show_mapping(Container3);
+Container = generate_mapping(Container, checker_vector);
+show_mapping(Container);
 %% Calcolo angolo degli specchi
 % Pleft = [];
 % Pright = [];

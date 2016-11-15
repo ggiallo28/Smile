@@ -34,6 +34,8 @@ function Container = th_estimation(Container, bw)
             imshow(RRGGBB);
         end
     end
+    % Provare a trattare separatamente i riflessi, si hanno problemi con 5
+    % riflessi nella stima dei quadrati
     bw_open = imerode(bw,strel('square',10));
     bw_open = bwareaopen(bw_open,200);
     idx = sort(cell2mat(struct2cell(regionprops(bwconncomp(bw_open,4),'Area'))),'descend' )';
@@ -52,10 +54,14 @@ function Container = th_estimation(Container, bw)
         outliers = excludedata(idy,idx,'indices',I);
         [fitresult, ~] = fit( idy, idx, ft, opts );
         plot(fitresult,'r-',idy,idx,'k.',outliers,'m*');
+        id_tmp = idy;
+        id_tmp(outliers) = [] ;
+        if(size(id_tmp)<=2)
+            break;
+        end
         idy(outliers) = [] ; idx(outliers) = [];
-        pause(0.01);
     end
-    step_dim = floor(size(idx)/3);
+    step_dim = floor(size(idy)/3);
     mean_square2 = mean(idx);
     mean_big2 = mean(fitresult(idy(1:step_dim)));
     mean_medium2 = mean(fitresult(idy(step_dim+1:2*step_dim)));
@@ -70,10 +76,38 @@ function Container = th_estimation(Container, bw)
             imshow(RRGGBB);
         end
     end
-    mean_square = mean([mean_square2, mean_square1]);
+%% mean    
+    if isnan(mean_square2)
+        mean_square = mean_square1;
+    elseif isnan(mean_square1)
+        mean_square = mean_square2;
+    else
+        mean_square = mean([mean_square2, mean_square1]);
+    end
     Container.size_square = mean_square;
-    Container.size_big = mean([mean_big1, mean_big2]);
-    Container.size_medium = mean([mean_medium2, mean_medium1]);
-    Container.size_small = mean([mean_small1, mean_small2]);
     Container.Threshold = round(mean_square/Container.fraction);
+%% big   
+    if isnan(mean_big1)
+        Container.size_big = mean_big2;
+    elseif isnan(mean_big2)
+        Container.size_big = mean_big1;
+    else
+        Container.size_big = mean([mean_big1, mean_big2]);
+    end
+%% mid
+    if isnan(mean_medium1)
+        Container.size_medium = mean_medium2;
+    elseif isnan(mean_medium2)
+        Container.size_medium = mean_medium1;
+    else
+       Container.size_medium = mean([mean_medium2, mean_medium1]);
+    end
+%% small
+    if isnan(mean_small1)
+        Container.size_big = mean_small2;
+    elseif isnan(mean_small2)
+        Container.size_big = mean_small1;
+    else
+         Container.size_small = mean([mean_small1, mean_small2]);
+    end 
 end

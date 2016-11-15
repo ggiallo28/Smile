@@ -153,7 +153,7 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
         hold off
 
         GRIDvv = getVImage(bwV, maskI, GRIDh);
-        GRID = imerode(maskI,strel('rectangle',[30,10])) & ~mask & ~imdilate(gapGRIDLeft,strel('disk',dilateLeft)) & ~imdilate(gapGRIDRight,strel('disk',dilateRight));% | GRIDvv;
+        GRID = imerode(maskI,strel('rectangle',[30,12])) & ~mask & ~imdilate(gapGRIDLeft,strel('disk',dilateLeft)) & ~imdilate(gapGRIDRight,strel('disk',dilateRight));% | GRIDvv;
         % ordina i blob in base alla distanza dalla retta destra e sinistra,
         % misura la distanza media, usa questa per definire di quanto allargare
         % le rette che tagliano il bordo più esterno
@@ -265,9 +265,11 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
     %     end
     %     CC = bwconncomp(sep_squares>0,8);
         sss_image = zeros(size(sep_squares,1),size(sep_squares,2),3); P = [];
+%       deb = zeros(size(sep_squares));
         for l=1:CC.NumObjects
             [cutR,cutC] = ind2sub(size(GRIDv),CC.PixelIdxList{l});
             tmp = sep_squares(min(cutR):max(cutR),min(cutC):max(cutC));
+%            deb(min(cutR):max(cutR),min(cutC):max(cutC)) = tmp;
             tt = 0.3*size(tmp,1)*size(tmp,2);
             condition = true;
             th = 0.9; store = cell(2,1);
@@ -318,7 +320,9 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                     P = [P;min(cutR)+YY,min(cutC)+XX];        
             end
         end
-        P = [P;[imagePoints(:,2),imagePoints(:,1)]];
+        if ~isempty(imagePoints)
+            P = [P;[imagePoints(:,2),imagePoints(:,1)]];
+        end
         figure, imshow(I), hold on, scatter(P(:,2),P(:,1));
         [y_rj_matrix, x_cj_matrix] = orderPoints(P, horizontalCell(i,:), verticalCell(i,:), maskI);
         pointsArray.x_points{i} = x_cj_matrix;

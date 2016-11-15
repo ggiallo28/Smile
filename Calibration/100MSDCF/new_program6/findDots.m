@@ -43,5 +43,10 @@ function points = findDots(Igray)
     Ixy = imfilter(Ixy, G);
     
     points = find_peaks(cxy, peakThreshold);
+    scores0 = cxy(sub2ind(size(cxy), points(:, 2), points(:, 1)));
+    if(size(points,1)>1)
+        [~, i] = max(scores0);
+        points = points(i,:);
+    end
 end
 

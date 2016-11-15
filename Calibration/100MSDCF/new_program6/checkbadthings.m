@@ -55,13 +55,16 @@ function [color_square, y_c, x_c, isDone, isErased] = checkbadthings(color_squar
         ratio3 = w3/wh3;
         isDone = isDone && (ratio1<0.7 || ratio2<0.7 || ratio3<0.7 || ~(hh<ymean*1.05 && hh>ymean*0.95)); % Se ho 3 quadrati giusti l'artezza calcolata dovrà essere simile a quella media
     end
-
+    
     if(isDone)
+        backup_color_square = color_square;
+        [idr,idc] = ind2sub(size(color_square),find(imfill(color_square,'holes')==1));
+        bb = minBoundingBox([idr,idc]);
         max_size = max(transtions(:,4)); side = sqrt(max_size);
         op_th = round(0.15*(transtions(idx,4)/side));
-        color_square = imerode(color_square,strel('rectangle',[op_th,op_th]));
-        color_square = bwareaopen(color_square,Threshold);
-        color_square = imdilate(color_square,strel('rectangle',[op_th,op_th]));
+        color_square = imerode(color_square,strel('rectangle',[op_th,round(op_th*1.2)])); %0, 1.2
+        color_square = bwareaopen(color_square,round(Threshold*1.3)); % 0, 1.15, 1.3
+        color_square = imdilate(color_square,strel('rectangle',[op_th,round(op_th*1.2)]));
         if ~sum(sum(color_square)) == 0
             split = medfilt2(sum(color_square),[1,10]);
             split = find(split~=0);
