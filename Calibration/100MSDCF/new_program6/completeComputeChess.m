@@ -19,7 +19,7 @@ function obj_chess = completeComputeChess(obj_chess, transtions, Container)
                 mask = false(size(maskedRGBImage,1),size(maskedRGBImage,2));
                 mask(y(i,1):y(i,2),x(i,1):x(i,2))=true;
                 color_square =  BW&mask;
-                [color_square, yy, xx, isDone, isErased] = checkbadthings(color_square, Threshold,y, x(i,:), transtions, kk, i);
+                [color_square, yy, xx, isDone, isErased] = checkbadthings(color_square, Threshold,y, x(i,:), transtions, kk, i, Container, obj_chess);
                 if ( isDone & ~isErased)
                     BW(y(i,1):y(i,2),x(i,1):x(i,2)) = color_square(y(i,1):y(i,2),x(i,1):x(i,2));
                     y(i,:) = yy;

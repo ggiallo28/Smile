@@ -1,4 +1,4 @@
-function [obj_chess, transitions] = getColorBoundary(obj_red, obj_green, obj_blue, obj_yellow, checker_vector, Container)
+function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_green, obj_blue, obj_yellow, checker_vector, Container)
     dim = Container.img_dim;
     
     raw_order = []; raw_label = [];
@@ -124,4 +124,6 @@ function [obj_chess, transitions] = getColorBoundary(obj_red, obj_green, obj_blu
         end
     end
     transitions = [transitions,vector_sizes];
+    Container.raw_order = raw_order;
+    Container.raw_label = raw_label;
 end

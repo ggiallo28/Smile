@@ -243,14 +243,14 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
         size_cc = CC.NumObjects; condition = true;
         dil = 1; sep_mask_tmp = sep_mask;
         while condition
-            sep_mask_tmp = imdilate(sep_mask_tmp,strel('square',dil));
+            sep_mask_tmp = imdilate(sep_mask,strel('square',dil));
             CC = bwconncomp(sep_mask_tmp,8);
             if CC.NumObjects < size_cc
                 break;
             end
-            dil = dil + 1;
+            dil = dil + 2;
         end
-        sep_mask = imdilate(sep_mask,strel('square',floor(dil*0.9)));
+        sep_mask = imdilate(sep_mask,strel('square',floor(dil*0.2)));
 %% Aggiunta
         sep_squares = gray.*sep_mask;
         sep_squares = sep_squares.*bwareaopen(sep_squares>0,10);
