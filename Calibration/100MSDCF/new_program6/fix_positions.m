@@ -28,27 +28,45 @@ function obj = fix_positions(x, obj, BW, toFix)
         end
         % trovo la posizione giusta degli zeri in funzione di quelle che sono
         % le tessere mancanti
-        for k=1:size(id_row,1)
-            row_Xchess = obj.chess(i).center_x(id_row(k),:);
-            index = 1:size(row_Xchess,2);
-            row_Ychess = obj.chess(i).center_y(id_row(k),:);
-            row_Xchess(row_Xchess ==0) = [];
-            row_Ychess(row_Ychess ==0) = [];
-            row_X = X(id_row(k),:);
-            for j=1:size(row_Xchess,2)
-                curr_val_x = row_Xchess(j);
-                curr_val_y = row_Ychess(j);
-                row = abs(row_X-curr_val_x);
-                idx = find(row== min(row));
-                X(id_row(k),idx) = curr_val_x;
-                Y(id_row(k),idx) = curr_val_y;
-                index(index == idx) = [];
+        tmp_x = obj.chess(i).center_x;
+        tmp_y = obj.chess(i).center_y;
+        [idr,~] = find(obj.chess(i).center_x == 0);
+        diff_x = []; diff_y = [];
+        for k=1:size(obj.chess(i).center_x,2)
+            for j=1:size(idr,1)
+                tmp_x(idr(j),:) = circshift(tmp_x(idr(j),:)',1)';
+                tmp_y(idr(j),:) = circshift(tmp_y(idr(j),:)',1)';
             end
-            X(id_row(k),index) = 0;
-            Y(id_row(k),index) = 0;
-        end  
-        obj.chess(i).center_x = X;
-        obj.chess(i).center_y = Y;
+            mask = tmp_x ~= 0;
+            diff_x = [diff_x, mean2(abs(X.*mask-tmp_x))];
+            diff_y = [diff_y, mean2(abs(Y.*mask-tmp_y))];
+        end
+        [~,shift_amount] = min(diff_x);
+        for j=1:size(idr,1)
+            obj.chess(i).center_x(idr(j),:) = circshift(obj.chess(i).center_x(idr(j),:)',shift_amount)';
+            obj.chess(i).center_y(idr(j),:) = circshift(obj.chess(i).center_y(idr(j),:)',shift_amount)';
+        end
+%         for k=1:size(id_row,1)
+%             row_Xchess = obj.chess(i).center_x(id_row(k),:);
+%             index = 1:size(row_Xchess,2);
+%             row_Ychess = obj.chess(i).center_y(id_row(k),:);
+%             row_Xchess(row_Xchess ==0) = [];
+%             row_Ychess(row_Ychess ==0) = [];
+%             row_X = X(id_row(k),:);
+%             for j=1:size(row_Xchess,2)
+%                 curr_val_x = row_Xchess(j);
+%                 curr_val_y = row_Ychess(j);
+%                 row = abs(row_X-curr_val_x);
+%                 idx = find(row== min(row));
+%                 X(id_row(k),idx) = curr_val_x;
+%                 Y(id_row(k),idx) = curr_val_y;
+%                 index(index == idx) = [];
+%             end
+%             X(id_row(k),index) = 0;
+%             Y(id_row(k),index) = 0;
+%         end  
+%         obj.chess(i).center_x = tmp_x;
+%         obj.chess(i).center_y = tmp_y;
         ind = find(obj.chess(i).center_x==0);
         assert(count_zero == size(ind,1),'Errore nella fix positions');
         if toFix

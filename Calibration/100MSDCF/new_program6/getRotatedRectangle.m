@@ -1,4 +1,4 @@
-function [LTp, RTp, LBp, RBp]  = getRotatedRectangle(color_square)
+function [LTp, RTp, LBp, RBp, rct]  = getRotatedRectangle(color_square)
     % https://kyamagu.github.io/mexopencv/matlab/minAreaRect.html
     [idr,idc] = ind2sub(size(color_square),find(imfill(color_square,'holes')==1));
     rct = cv.minAreaRect([idr,idc]);

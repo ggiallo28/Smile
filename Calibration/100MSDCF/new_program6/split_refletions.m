@@ -2,7 +2,8 @@ function Container = split_refletions(Container, fuse, checker_vector)
     obj_chess = Container.obj_chess;
     
     enlarged = imdilate(fuse,strel('disk',20));
-    CC = bwconncomp(rgb2gray(enlarged)~=0);
+    fuse_bw = bwareaopen(rgb2gray(enlarged)~=0,20*Container.Threshold);
+    CC = bwconncomp(fuse_bw);
     assert(CC.NumObjects == 3, 'Ci sono troppi riflessi');
     maskCenter = false(size(rgb2gray(enlarged))); maskCenter(CC.PixelIdxList{2}) = 1;
     maskLeft = false(size(rgb2gray(enlarged))); maskLeft(CC.PixelIdxList{1}) = 1;

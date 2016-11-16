@@ -58,14 +58,18 @@ function [color_square, y_c, x_c, isDone, isErased] = checkbadthings(color_squar
     
     if(isDone)
         backup_color_square = color_square;
-        [idr,idc] = ind2sub(size(color_square),find(imfill(color_square,'holes')==1));
-        bb = minBoundingBox([idr,idc]);
+        [~, ~, ~, ~, rct_before]  = getRotatedRectangle(backup_color_square);
         max_size = max(transtions(:,4)); side = sqrt(max_size);
         op_th = round(0.15*(transtions(idx,4)/side));
         color_square = imerode(color_square,strel('rectangle',[op_th,round(op_th*1.2)])); %0, 1.2
         color_square = bwareaopen(color_square,round(Threshold*1.3)); % 0, 1.15, 1.3
         color_square = imdilate(color_square,strel('rectangle',[op_th,round(op_th*1.2)]));
-        if ~sum(sum(color_square)) == 0
+        [~, ~, ~, ~, rct_after]  = getRotatedRectangle(backup_color_square);
+        if 0.95*rct_before.size(1)< rct_after.size(1) && 1.05*rct_before.size(1) > rct_after.size(1)
+            color_square = backup_color_square;
+            isDone = false;
+            disp('restored');
+        elseif ~sum(sum(color_square)) == 0
             split = medfilt2(sum(color_square),[1,10]);
             split = find(split~=0);
             [x_c, y_c] = compute_projections(color_square, split);
