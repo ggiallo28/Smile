@@ -154,6 +154,7 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
 
         GRIDvv = getVImage(bwV, maskI, GRIDh);
         GRID = imerode(maskI,strel('rectangle',[30,12])) & ~mask & ~imdilate(gapGRIDLeft,strel('disk',dilateLeft)) & ~imdilate(gapGRIDRight,strel('disk',dilateRight));% | GRIDvv;
+        %thinedImage = bwmorph(GRID,'thin',inf);
         % ordina i blob in base alla distanza dalla retta destra e sinistra,
         % misura la distanza media, usa questa per definire di quanto allargare
         % le rette che tagliano il bordo più esterno
@@ -229,7 +230,7 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
     % Provo con la funzione di matlab, se questa non rintraccia alcuni punti
     % allora provo con il mio metodo
         [imagePoints,~] = detectCheckerboardPoints(I.*repmat(uint8(maskI),1,1,3));
-%        imshow(I); hold on; plot(imagePoints(:,1), imagePoints(:,2), 'ro')
+        imshow(I); hold on; plot(imagePoints(:,1), imagePoints(:,2), 'ro')
     % Orizzontale
         R = im2double(I(:,:,1)); G = im2double(I(:,:,2)); B = im2double(I(:,:,3));
         GRIDv2 = imdilate(image_line,strel('disk',10));
@@ -294,9 +295,11 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                 figure
                 while(condition && th>0)
                     bw_tmp = im2bw(tmp,th);
-                    th = th-0.01;
+                    th = th-0.005;
                     CC_tmp = bwconncomp(bw_tmp,4);
-                    imshow(bw_tmp);
+%                     imshow(bw_tmp);
+%                     pause(0.1)
+%                     th
                     if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)
                         condition = false;
                         [blob1y,blob1x] = ind2sub(size(tmp),store{1});
@@ -316,22 +319,34 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                              condition = true;
                         end
                     end
-                    if(CC_tmp.NumObjects == 2)                  
+                    if(CC_tmp.NumObjects >= 2) 
+%                        CC_tmp
                        store(1) = CC_tmp.PixelIdxList(1);
                        store(2) = CC_tmp.PixelIdxList(2);          
                     end 
                 end
+                %% INVECE DIFARE STA MANFRINA USARE corner(bw_tmp,'Harris'
+                if(isempty(D))
+                    YY = size(bw_tmp,1)*0.5;
+                    XX = size(bw_tmp,2)*0.5;
+                else
                     [D(5,:), idd] = sort(D(5,:));
                     D(1,:) = D(1,idd);
                     D(2,:) = D(2,idd);
                     D(3,:) = D(3,idd);
                     D(4,:) = D(4,idd);
-                    XX = round(mean([D(1,1:5),D(3,1:5)]));
-                    YY = round(mean([D(2,1:5),D(4,1:5)]));
-                    %figure, imshow(bw_tmp), hold on, scatter(XX,YY);
-                    sss_image(min(cutR):max(cutR),min(cutC):max(cutC),1) = bw_tmp;
-                    sss_image(min(cutR)+YY,min(cutC)+XX,2) = 1;
-                    P = [P;min(cutR)+YY,min(cutC)+XX];        
+                    if size(D,2)>=5
+                        XX = round(mean([D(1,1:5),D(3,1:5)]));
+                        YY = round(mean([D(2,1:5),D(4,1:5)]));
+                    else
+                        XX = round(mean([D(1,:),D(3,:)]));
+                        YY = round(mean([D(2,:),D(4,:)]));
+                    end
+                        %figure, imshow(bw_tmp), hold on, scatter(XX,YY);
+                        sss_image(min(cutR):max(cutR),min(cutC):max(cutC),1) = bw_tmp;
+                        sss_image(min(cutR)+YY,min(cutC)+XX,2) = 1;
+                        P = [P;min(cutR)+YY,min(cutC)+XX];
+                end
             end
         end
         if ~isempty(imagePoints)

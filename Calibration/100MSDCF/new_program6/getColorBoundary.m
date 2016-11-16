@@ -41,7 +41,7 @@ function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_gre
     raw_order(2,:) = raw_order(2,idx);
     raw_order(4,:) = raw_order(4,idx);
     raw_label = raw_label(idx);
-    raw_label = [raw_label;raw_label];
+    raw_label = [raw_label;raw_label;raw_label];
     for i=1:size(raw_label,2)
         center_x = raw_order(3,i);
         if(center_x<x(1,2))
@@ -54,6 +54,25 @@ function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_gre
             raw_label(2,i) = {'Center'};
         end
     end
+    idx_center = find(strcmp(raw_label(2,:),'Center'));
+    raw_label(3,idx_center) = {'Not_Duplicate'};
+    idx_left = 1:idx_center(1)-1;
+    idx_right = idx_center(end)+1:size(raw_label(2,:),2);
+    [c,~,ic] = unique(raw_label(1,idx_left),'rows');
+    [a,b] = hist(ic,unique(ic));
+    raw_label(3,idx_left) = {'Not_Duplicate'}; idx_color = b(a==2); 
+    if ~isempty(idx_color)
+        idx_color = find(strcmp(c(idx_color),raw_label(1,idx_left)));
+        raw_label(3,idx_left(idx_color)) = {'Duplicate'};
+    end
+    [c,~,ic] = unique(raw_label(1,idx_right),'rows');
+    [a,b] = hist(ic,unique(ic));
+    raw_label(3,idx_right) = {'Not_Duplicate'}; idx_color = b(a==2); 
+    if ~isempty(idx_color)
+        idx_color = find(strcmp(c(idx_color),raw_label(1,idx_right)));
+        raw_label(3,idx_right(idx_color)) = {'Duplicate'};
+    end
+    
     check = checker_vector(2,:,:);
     last = 0;
     idx_curr = raw_order(1:2,1)';
@@ -68,8 +87,6 @@ function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_gre
         succ_color = name2code(raw_label(1,i+1));
         ii = find(check(:,:,1) == succ_color(1) & check(:,:,2) == succ_color(2) & check(:,:,3) == succ_color(3));
         jj = find(check(:,:,1) == curr_color(1) & check(:,:,2) == curr_color(2) & check(:,:,3) == curr_color(3));
-%         raw_label(1,i)
-%         raw_label(1,i+1)
         if(~strcmp(raw_label(2,i),raw_label(2,i+1)) && last ~=0)
             order = -1*last;
         elseif(mod(jj-1,6)==5 && mod(ii-1,6)==0)
@@ -81,7 +98,9 @@ function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_gre
         else
             order = -1;
         end
-        if(last ~= 0 && last~=order)   
+        switch_condition = i<idx_center(1) && strcmp(raw_label(3,i),'Not_Duplicate') && strcmp(raw_label(3,i+1),'Duplicate') ||...
+            i>idx_center(end) && strcmp(raw_label(3,i),'Duplicate') && strcmp(raw_label(3,i+1),'Not_Duplicate');
+        if(last ~= 0 && last~=order || switch_condition)   
             idx_curr = raw_order(1:2,i)';
             idx_succ = raw_order(1:2,i+1)';
             transitions = [transitions;[idx_curr,side]]; %obj_curr id_chess_curr, obj_succ id_chess_succ
@@ -91,8 +110,19 @@ function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_gre
             transitions_label(idt,2) = raw_label(2,i+1);
             side = -1*side;
             idt = idt +1;
+            toshow = 'edge';
+        else
+            toshow = '';
         end
         last = order;
+        if switch_condition
+            last = -1*last;
+        end
+        if( order == -1)
+            disp([raw_label(1,i),'->',raw_label(1,i+1),':',num2str(ii),'->',num2str(jj),' <-- ', toshow]);
+        else
+            disp([raw_label(1,i),'->',raw_label(1,i+1),':',num2str(ii),'->',num2str(jj),' --> ', toshow]);
+        end
     end
     idx_succ = raw_order(1:2,end)';
     transitions = [transitions;[idx_succ,side]];

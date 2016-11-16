@@ -10,7 +10,7 @@ function [x, y, BW, maskedRGBImage] = img_filtering(x, y, BW, maskedRGBImage, si
         color_square =  imclose(color_square,strel('Line',round(0.1*sqrt(size_square)),90));
         CC = bwconncomp(color_square);
         if(size(CC.PixelIdxList,2) == 1 || sum(sum(color_square)) < 2*Threshold)
-            if(abs(y(i,1)-y(i,2)) < 0.5*y_mean || sum(sum(color_square)) < 2*Threshold)
+            if(abs(y(i,1)-y(i,2)) < 0.51*y_mean || sum(sum(color_square)) < 2*Threshold)
                 if( ~isempty(CC.PixelIdxList) )
                     uno = maskedRGBImage(:,:,1);
                     due = maskedRGBImage(:,:,2);

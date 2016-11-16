@@ -3,9 +3,9 @@ figure,imshow(imread('checkerboard.jpg'));
 checker_vector = fliplr(reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]));
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
 path = '../foto/ultime/';
-name = ['DSC00',num2str(527)];
+name = ['DSC00',num2str(549)];
 orig = imread([path,name,'.JPG']);
-orig_bg = imread([path,'DSC00',num2str(528),'.JPG']);
+orig_bg = imread([path,'DSC00',num2str(548),'.JPG']);
 %% Normalizzazione
 Container = objContainer();
 [Container.I, Container.I_BG, Container.O, Container.O_BG, Container.BB] = normalize_image(orig, orig_bg);
@@ -35,6 +35,9 @@ hsv = rgb2hsv(RGB);
 % Non sono in grado d distinguere tra il viola e il rosso, tra l'azzurro e il blu, quindi 4 cluster invece che 6
 figure, imshow(imread('hsv.jpg'));
 %% Stima la dimensione del quadrato più grande
+bw_en = imdilate(bw,strel('square',20));
+bw_en = bwareaopen(bw_en,floor(0.2*mean(cell2mat(struct2cell(regionprops(bw_en,'Area'))))));
+bw = bw & bw_en;
 Container = th_estimation(Container, bw);
 % bisogna farlo per ogni riflesso siccome il massimo quadrato ha dimensione
 % diversa

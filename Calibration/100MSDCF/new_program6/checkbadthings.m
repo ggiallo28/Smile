@@ -7,6 +7,7 @@ function [color_square, y_c, x_c, isDone, isErased] = checkbadthings(color_squar
     if ~isDone
         return;
     end
+    disp(['Analysing ', num2str(chess_idx),'...']);
     ymean = mean(abs(y(:,1)-y(:,2)));
 %    ratio = abs(x(1)-x(2))/ymean;
 %% GET LEFT/RIGHT SQUARES USING DIRECTIONS
@@ -21,6 +22,12 @@ function [color_square, y_c, x_c, isDone, isErased] = checkbadthings(color_squar
         hindirection = abs(lineTop(bbx(1))-lineBot(bbx(1)));
     else
         hindirection = abs(lineTop(bbx(2))-lineBot(bbx(2)));
+    end
+    [idr,idc] = ind2sub(size(color_square),find(imfill(color_square,'holes')==1));
+    rct = cv.minAreaRect([idr,idc]);
+    if max(rct.size)<hindirection*1.05 && max(rct.size)>hindirection*0.95
+         isDone = false; disp('tall');
+         return;  
     end
 %% 
     
