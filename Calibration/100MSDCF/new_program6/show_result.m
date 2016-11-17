@@ -1,4 +1,4 @@
-function fuse = show_result(Container)
+function fuse = show_result(Container, toSave, path)
 %% INIT
     obj_chess = Container.obj_chess;
     I = Container.I;
@@ -13,7 +13,7 @@ function fuse = show_result(Container)
     end
     BW = uint8(255.*(inv_BW-col_BW));
     fuse = colors_fuse+repmat(BW,[1 1 3]);
-    imshow([I;fuse]); hold on;
+    fig = figure; imshow([I;fuse]); hold on;
     for l=1:size(obj_chess,1)
         obj = obj_chess(l);
         if( ~obj.isEmpty )
@@ -28,6 +28,10 @@ function fuse = show_result(Container)
                 end       
             end
         end
+    end
+    hold off
+    if (toSave)
+        print(fig,[path,'MySavedPlot2'],'-dpng')
     end
     hold off;
 end

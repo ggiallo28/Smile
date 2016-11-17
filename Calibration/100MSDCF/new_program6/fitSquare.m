@@ -18,12 +18,13 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     color_square_bb(2)+color_square_bb(4) color_square_bb(2)]); l1 = legend(); set(l1,'visible','off');
     color_square_edge_v = abs(imfilter(imfill(color_square,'holes'),[-1 0 1])) + abs(imfilter(imfill(color_square,'holes'),[1 0 -1]));
     color_square_edge_h = abs(imfilter(imfill(color_square,'holes'),[1 0 -1]'))+abs(imfilter(imfill(color_square,'holes'),[-1 0 1]'));
-    [LTp, RTp, LBp, RBp]  = getRotatedRectangle(color_square);
+    [LTp, RTp, LBp, RBp, rct]  = getRotatedRectangle(color_square);
     [rct_line_left, ~] = createLine([LBp(2) LTp(2)],[LBp(1) LTp(1)]); % Al contrario perchè ho necessità di sostituire la y
     [rct_line_right, ~] = createLine([RBp(2) RTp(2)],[RBp(1) RTp(1)]);
     [rct_line_left_test, ~] = createLine([LBp(1) LTp(1)],[LBp(2) LTp(2)]);
     [rct_line_right_test, ~] = createLine([RBp(1) RTp(1)],[RBp(2) RTp(2)]);
 %% HORIZONTAL
+%    color_square_edge_hull = abs(imfilter(bwconvhull(color_square),[1 0 -1]'))+abs(imfilter(bwconvhull(color_square),[-1 0 1]'));
     color_square_edge_h = color_square_edge_h-color_square_edge_v;
     color_square_edge_h(color_square_edge_h<0) = 0;
     color_square_edge_h = imclose(color_square_edge_h,strel('disk',2));
@@ -54,8 +55,8 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     [vect_top(2,:),vect_top(1,:)] = sort(vect_top(2,:));
     [vect_bot(2,:),vect_bot(1,:)] = sort(vect_bot(2,:));
     
-    iitop = find(vect_top(2,:)<0.7*size_square);
-    iibot = find(vect_bot(2,:)<0.7*size_square);
+    iitop = find(vect_top(2,:)<0.5*size_square);
+    iibot = find(vect_bot(2,:)<0.5*size_square);
     tmptop = CC_h.PixelIdxList(vect_top(1,iitop));
     tmpbot = CC_h.PixelIdxList(vect_bot(1,iibot));
     cctop = []; ccbot=[];   
@@ -65,19 +66,29 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     for count=1:size(tmpbot,2)
         ccbot = [ccbot; cell2mat(tmpbot(count))];
     end
-    [idx_top,idy_top]=ind2sub(size(color_square),cctop);
+    if size(cctop,1) > 50
+        [idx_top,idy_top]=ind2sub(size(color_square),cctop);
+    else
+        idx_top = [LTp(2), RTp(2)];
+        idy_top = [LTp(1), RTp(1)];
+    end
     [fitresult_top, ~] = createLine(idy_top,idx_top);
-    [fitresult_top_tmp, isDone] = adjustLine(fitresult_top,idy_top,idx_top);
-    if(isDone)
-        fitresult_top = fitresult_top_tmp;
+%     [fitresult_top_tmp, isDone] = adjustLine(fitresult_top,idy_top,idx_top);
+%     if(isDone)
+%         fitresult_top = fitresult_top_tmp;
+%     end
+    plot(fitresult_top); l1 = legend(); set(l1,'visible','off'); 
+    if size(ccbot,1) > 50
+        [idx_bot,idy_bot]=ind2sub(size(color_square),ccbot);
+    else
+        idx_bot = [LBp(2), RBp(2)];
+        idy_bot = [LBp(1), RBp(1)];
     end
-    plot(fitresult_top); l1 = legend(); set(l1,'visible','off');  
-    [idx_bot,idy_bot]=ind2sub(size(color_square),ccbot);
     [fitresult_bot, ~] = createLine(idy_bot,idx_bot);
-    [fitresult_bot_tmp, isDone] = adjustLine(fitresult_bot,idy_bot,idx_bot);
-    if(isDone)
-        fitresult_bot = fitresult_bot_tmp;
-    end
+%     [fitresult_bot_tmp, isDone] = adjustLine(fitresult_bot,idy_bot,idx_bot);
+%     if(isDone)
+%         fitresult_bot = fitresult_bot_tmp;
+%     end
     plot(fitresult_bot); l1 = legend(); set(l1,'visible','off');
 %% HORIZONTAL 2
     yLB = fitresult_bot(x1);

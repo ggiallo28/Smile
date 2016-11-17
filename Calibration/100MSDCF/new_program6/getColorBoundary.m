@@ -103,14 +103,19 @@ function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_gre
         if(last ~= 0 && last~=order || switch_condition)   
             idx_curr = raw_order(1:2,i)';
             idx_succ = raw_order(1:2,i+1)';
-            transitions = [transitions;[idx_curr,side]]; %obj_curr id_chess_curr, obj_succ id_chess_succ
-            transitions_label(idt,1) = raw_label(2,i);
-            side = -1*side;
-            transitions = [transitions;[idx_succ,side]]; %obj_curr id_chess_curr, obj_succ id_chess_succ
-            transitions_label(idt,2) = raw_label(2,i+1);
-            side = -1*side;
-            idt = idt +1;
-            toshow = 'edge';
+            idx_2time = find(transitions(:,1) == idx_curr(1) & transitions(:,2) == idx_curr(2) | transitions(:,1) == idx_succ(1) & transitions(:,2) == idx_succ(2), 1);
+            if isempty(idx_2time) 
+                transitions = [transitions;[idx_curr,side]]; %obj_curr id_chess_curr, obj_succ id_chess_succ
+                transitions_label(idt,1) = raw_label(2,i);
+                side = -1*side;
+                transitions = [transitions;[idx_succ,side]]; %obj_curr id_chess_curr, obj_succ id_chess_succ
+                transitions_label(idt,2) = raw_label(2,i+1);
+                side = -1*side;
+                idt = idt +1;
+                toshow = 'edge';
+            else
+                toshow = '';
+            end
         else
             toshow = '';
         end
@@ -125,6 +130,7 @@ function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_gre
         end
     end
     idx_succ = raw_order(1:2,end)';
+    assert(side == 1, 'Errore nella get Color Boundary');
     transitions = [transitions;[idx_succ,side]];
     vector_sizes = [];
     for i=1:size(transitions_label,1)

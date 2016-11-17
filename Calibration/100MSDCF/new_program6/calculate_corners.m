@@ -167,7 +167,7 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
         GRIDv = GRIDv - GRIDh;
         GRIDv(GRIDv<0) = 0;
         stats = cell2mat(struct2cell(regionprops(bwconncomp(GRIDv,8),'Area')));
-        GRIDv = bwareaopen(GRIDv,50); % Aggiustare questa soglia
+        GRIDv = bwareaopen(GRIDv,floor(0.8*sqrt(Container.size_big))); % Aggiustare questa soglia
 
         figure, imshow(GRIDv);
 

@@ -1,57 +1,24 @@
 close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
-checker_vector = fliplr(reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]));
+checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
-path = '../foto/ultime/';
-name = ['DSC00',num2str(549)];
-orig = imread([path,name,'.JPG']);
-orig_bg = imread([path,'DSC00',num2str(548),'.JPG']);
+% path = '../foto/ultime/';
+% name = ['DSC00',num2str(545)];
+% orig = imread([path,name,'.JPG']);
+% orig_bg = imread([path,'DSC00',num2str(547),'.JPG']);
+path = '../foto/Evaluation/4r_c/2/';
+orig = imread([path,'fore.JPG']);
+orig_bg = imread([path,'back.JPG']);
+%% Segmentazione
 %% Normalizzazione
 Container = objContainer();
 [Container.I, Container.I_BG, Container.O, Container.O_BG, Container.BB] = normalize_image(orig, orig_bg);
-%% Parametri
-Container.num_square = 5;
-Container.confidence = 2.8;
-Container.img_dim  = size(Container.I);
-%Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
-Container.fraction = 20;
-Container.mpd = 30; % 30
-Container.windowSize = 6; % 6
-Container.op_th = 15;
-if exist([path,name,'.mat'], 'file') == 2
-    load([path,name,'.mat'])
-end
-%% Background Subtraction
-[bw, inImg] = subtract_background(Container);
-%% Histogram Peak Finding
-Rp = inImg(:,:,1); Rp = Rp(bw);
-Gp = inImg(:,:,2); Gp = Gp(bw);
-Bp = inImg(:,:,3); Bp = Bp(bw);
-RGB = cat(3,Rp,Gp,Bp);
-hsv = rgb2hsv(RGB);
-[output_peak, output_minima_mid, hist_size ] = findpeaksandminima(hsv(:,:,1),Container.windowSize,Container.mpd);
-% [output_peak, output_minima_low, output_minima_high, output_minima_mid, hist_size] =...
-%     findlocalminima(hsv(:,:,1),Container.mpd,Container.windowSize,0,1);
-% Non sono in grado d distinguere tra il viola e il rosso, tra l'azzurro e il blu, quindi 4 cluster invece che 6
-figure, imshow(imread('hsv.jpg'));
-%% Stima la dimensione del quadrato più grande
-bw_en = imdilate(bw,strel('square',20));
-bw_en = bwareaopen(bw_en,floor(0.2*mean(cell2mat(struct2cell(regionprops(bw_en,'Area'))))));
-bw = bw & bw_en;
-Container = th_estimation(Container, bw);
-% bisogna farlo per ogni riflesso siccome il massimo quadrato ha dimensione
-% diversa
-%% Segmentazione
-obj_red = computeChess(Container, bw, hist_size, output_minima_mid, 'red');
-obj_green = computeChess(Container, bw, hist_size, output_minima_mid, 'green');
-obj_blue = computeChess(Container, bw, hist_size, output_minima_mid, 'blue');
-obj_yellow = computeChess(Container, bw, hist_size, output_minima_mid, 'yellow');
-[obj_chess, transtions, Container] = getColorBoundary(obj_red, obj_green, obj_blue, obj_yellow, checker_vector, Container);
-obj_chess = completeComputeChess(obj_chess, transtions, Container);
+%% SEGMENTATION
+segmentation;
 %% Identifica colori usando Background, Error Check
 Container.obj_chess = error_check(obj_chess(1), obj_chess(2), obj_chess(3),  obj_chess(4));
 %% Plot Results
-fuse = show_result(Container);
+fuse = show_result(Container, false, path);
 %% Separa i riflessi
 Container = split_refletions(Container, fuse, checker_vector);
 %% Creazione Maschere per separazione riflessi

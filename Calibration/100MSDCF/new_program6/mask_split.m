@@ -26,11 +26,12 @@ function bwD = mask_split(BW, inv_BW, x, y)
                 img = imopen(img,strel('square',5));
                 toCompare = bwconvhull(img);
                 bboxCorr(iter) = corr2(toCompare,imfill(img,'holes'));
+                % Provare ad usare la Rectangularity
     %             figure, imshowpair(toCompare,img,'montage');
                 bboxCorr(iter) = 1-sum(sum(abs(double(toCompare) - double(img))))/sum(sum(abs(double(img))));
             end
-            if(find(bboxCorr<0.6)) %0.72
-                idx = find(bboxCorr<0.6);
+            if(find(bboxCorr<0.65)) %0.72
+                idx = find(bboxCorr<0.65);
                 tmp_chess = zeros(size(chess));
                 for k=1:size(idx)
                     tmp_chess(CC.PixelIdxList{idx(k)}) = 1;
