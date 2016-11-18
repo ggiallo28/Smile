@@ -6,13 +6,25 @@ checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
 % name = ['DSC00',num2str(545)];
 % orig = imread([path,name,'.JPG']);
 % orig_bg = imread([path,'DSC00',num2str(547),'.JPG']);
-path = '../foto/Evaluation/3_c/1/';
+path = '../foto/Evaluation/3_c/3/';
 orig = imread([path,'fore.JPG']);
 orig_bg = imread([path,'back.JPG']);
-%% Segmentazione
 %% Normalizzazione
 Container = objContainer();
 [Container.I, Container.I_BG, Container.O, Container.O_BG, Container.BB] = normalize_image(orig, orig_bg);
+%% Parametri
+Container.num_square = 5;
+if exist([path,'confidence'], 'file') == 2
+    Container.confidence = 3.2;
+else
+    Container.confidence = 2.8;
+end
+Container.img_dim  = size(Container.I);
+%Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
+Container.fraction = 20;
+Container.mpd = 30; % 30, 25
+Container.windowSize = 6; % 6
+Container.op_th = 15;
 %% SEGMENTATION
 segmentation;
 %% Identifica colori usando Background, Error Check

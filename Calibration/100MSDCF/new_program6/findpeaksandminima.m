@@ -2,7 +2,7 @@ function [pks, output_mid, hist_size ] = findpeaksandminima(image,windowSize,mpd
     h = imhist(image);
     
     h(40) = h(40)+10000;
-    h(110) = h(110)+10000;
+%    h(110) = h(110)+10000;
     
     h1 = filter(ones(1,windowSize)/windowSize,1,[h;h;h]);
     h1 = h1(size(h,1)+1:2*size(h,1)+1);
@@ -23,6 +23,7 @@ function [pks, output_mid, hist_size ] = findpeaksandminima(image,windowSize,mpd
             output_mid(4) = mod(locs(4)+0.5*abs((256+locs(1))-locs(4)),hist_size);
             output_mid = sort(output_mid);
     end
+    %for i=1:size(output_mid,
 
     plot(h1)
     xlabel('Pixel Value');

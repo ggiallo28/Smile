@@ -46,5 +46,8 @@ function [bw, inImg] = subtract_background(Container)
         end
         figure, imshow(maskedRGBImage);
         inImg = (I-maskedRGBImage).*repmat(uint8(bw),[1 1 3]);
+        bw = bw & th_value(inImg);
+        inImg = inImg.*repmat(uint8(bw),[1 1 3]);
         figure, imshow(inImg);
+        
 end

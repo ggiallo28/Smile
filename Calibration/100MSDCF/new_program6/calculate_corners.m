@@ -290,7 +290,8 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
             th = 0.9; store = cell(2,1);
             dot = findDots(tmp);
             %figure, imshow(tmp), hold on, scatter(dot(:,1),dot(:,2))
-            P = [P;min(cutR)+dot(:,2),min(cutC)+dot(:,1)];      
+            P = [P;min(cutR)+dot(:,2),min(cutC)+dot(:,1)];    
+            D = [];
             if(isempty(dot))
                 figure
                 while(condition && th>0)

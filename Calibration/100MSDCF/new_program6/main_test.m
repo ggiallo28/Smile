@@ -53,13 +53,25 @@ for ff=1:size(folders,1)
                 K(:,:,3) = Bt.*(2-L);
                 Container.I_BG = im2uint8(K);
                 %% TEST SEGMENTAZIONE
+                Container.num_square = 5;
+                if exist([path_3,'confidence'], 'file') == 2
+                    Container.confidence = 3.2;
+                else
+                    Container.confidence = 2.8;
+                end
+                Container.img_dim  = size(Container.I);
+                %Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
+                Container.fraction = 20;
+                Container.mpd = 30; % 30, 25
+                Container.windowSize = 6; % 6
+                Container.op_th = 15;
                 segmentation;
                 logic_fuse = false(size(obj_chess(1).color_mask));
                 for l=1:size(obj_chess,2)
                     logic_fuse = logic_fuse | obj_chess(l).color_mask;
                     logic_fuse = logic_fuse | obj_chess(l).inv_color_mask;
                 end
-                logic_fuse = imclose(logic_fuse,strel('square',15));
+                logic_fuse = imfill(imclose(logic_fuse,strel('square',25)),'holes');
                 full_image = false(size(orig,1),size(orig,2));
                 Container.BB = round(Container.BB);
                 full_image(Container.BB(2):Container.BB(2)+Container.BB(4),Container.BB(1):Container.BB(1)+Container.BB(3))= logic_fuse;

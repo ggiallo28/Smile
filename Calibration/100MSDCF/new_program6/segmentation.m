@@ -1,15 +1,3 @@
-%% Parametri
-Container.num_square = 5;
-Container.confidence = 2.8;
-Container.img_dim  = size(Container.I);
-%Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
-Container.fraction = 20;
-Container.mpd = 30; % 30, 25
-Container.windowSize = 6; % 6
-Container.op_th = 15;
-% if exist([path,name,'.mat'], 'file') == 2
-%     load([path,name,'.mat'])
-% end
 %% Background Subtraction
 [bw, inImg] = subtract_background(Container);
 %% Histogram Peak Finding
