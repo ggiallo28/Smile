@@ -6,7 +6,7 @@ checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
 % name = ['DSC00',num2str(545)];
 % orig = imread([path,name,'.JPG']);
 % orig_bg = imread([path,'DSC00',num2str(547),'.JPG']);
-path = '../foto/Evaluation/4r_c/2/';
+path = '../foto/Evaluation/3_c/1/';
 orig = imread([path,'fore.JPG']);
 orig_bg = imread([path,'back.JPG']);
 %% Segmentazione
@@ -19,47 +19,11 @@ segmentation;
 Container.obj_chess = error_check(obj_chess(1), obj_chess(2), obj_chess(3),  obj_chess(4));
 %% Plot Results
 fuse = show_result(Container, false, path);
-%% Separa i riflessi
-Container = split_refletions(Container, fuse, checker_vector);
-%% Creazione Maschere per separazione riflessi
-Container = generate_mask(Container);%obj_chess, label, order, positions, types, size(fuse));
-%% Calcolo convexhull dei riflessi: controllare se è necessario fare sta cosa
-Container = generate_bwconvhull(Container);
-%% Calcolo Convexhull tessere singole
-for i=1:size(Container.obj_chess,1)
-    if ( ~Container.obj_chess(i).isEmpty )
-        for j=1:size(Container.obj_chess(i).chess,2)
-            cut_x = Container.obj_chess(i).bbox_x(j,:);
-            cut_y = Container.obj_chess(i).bbox_y(j,:); 
-            Container.obj_chess(i).chess(j).ch_mask = false(size(fuse,1),size(fuse,2));
-            mask = imdilate(bwconvhull(Container.obj_chess(i).chess(j).mask),strel('square',3));
-            Container.obj_chess(i).chess(j).ch_mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2)) =...
-                mask(cut_y(1):cut_y(2),cut_x(1):cut_x(2));     
-            figure, imshowpair(Container.obj_chess(i).chess(j).ch_mask,rgb2gray(Container.I),'falsecolor');
-        end
-    end
-end
-close all;
-%% Full Mask
-FullMask  = false(size(fuse,1),size(fuse,2));
-if ( Container.isL2 )
-    FullMask = FullMask | Container.maskL2I;
-end
-if ( Container.isL1 )
-    FullMask = FullMask | Container.maskL1I;
-end
-if ( Container.isC )
-    FullMask = FullMask | Container.maskCI;
-end
-if ( Container.isR1 )
-    FullMask = FullMask | Container.maskR1I;
-end
-if ( Container.isR2 )
-    FullMask = FullMask | Container.maskR2I;
-end
-Container.FullMask = FullMask;
+%% MODELLAZIONE
+modeling;
 %% Fissa il centro degli assi
 [left_center_axis, right_center_axis, mid_center_axis] = generate_central_axis(Container);
+%% COORNER IDENTIFICATION
 %% Corner
 pointsArray = calculate_corners(Container, left_center_axis, right_center_axis, mid_center_axis);
 %% Divido i punti per ogni componente

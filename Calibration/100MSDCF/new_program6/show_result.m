@@ -31,7 +31,7 @@ function fuse = show_result(Container, toSave, path)
     end
     hold off
     if (toSave)
-        print(fig,[path,'MySavedPlot2'],'-dpng')
+        print(fig,[path,'MySavedPlot'],'-dpng')
     end
     hold off;
 end

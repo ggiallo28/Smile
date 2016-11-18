@@ -230,7 +230,7 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
     % Provo con la funzione di matlab, se questa non rintraccia alcuni punti
     % allora provo con il mio metodo
         [imagePoints,~] = detectCheckerboardPoints(I.*repmat(uint8(maskI),1,1,3));
-        imshow(I); hold on; plot(imagePoints(:,1), imagePoints(:,2), 'ro')
+    %    imshow(I); hold on; plot(imagePoints(:,1), imagePoints(:,2), 'ro')
     % Orizzontale
         R = im2double(I(:,:,1)); G = im2double(I(:,:,2)); B = im2double(I(:,:,3));
         GRIDv2 = imdilate(image_line,strel('disk',10));
