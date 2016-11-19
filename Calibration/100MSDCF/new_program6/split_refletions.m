@@ -204,6 +204,46 @@ function Container = split_refletions(Container, fuse, checker_vector)
         idx_color_chess = order(2,j);
         label(4,j) = obj_chess(idx_chess_vector).chess(idx_color_chess).type;
     end
+    idx_l1 = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(1)));
+    left1 = size(idx_l1,2);
+    idx_l2 = find(strcmp(label(3,:),positions(1)) & strcmp(label(4,:),types(2)));
+    left2 = size(idx_l2,2);
+    idx_r1 = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(1)));
+    right1 = size(idx_r1,2);
+    idx_r2 = find(strcmp(label(3,:),positions(3)) & strcmp(label(4,:),types(2)));
+    right2 = size(idx_r2,2);
+    idx_cc = find(strcmp(label(3,:),positions(2)) & strcmp(label(4,:),types(3)));
+    centerr = size(idx_cc,2);
+    if left1 == 1
+       ex_order = order(:,idx_l1);
+       obj_chess(ex_order(1)).chess(ex_order(2)) = [];
+       order(:,idx_l1) = [];
+       label(:,idx_l1) = [];
+    end
+    if left2 == 1
+       ex_order = order(:,idx_l2);
+       obj_chess(ex_order(1)).chess(ex_order(2)) = [];
+       order(:,idx_l2) = [];
+       label(:,idx_l2) = [];
+    end
+    if right1 == 1
+       ex_order = order(:,idx_r1);
+       obj_chess(ex_order(1)).chess(ex_order(2)) = [];
+       order(:,idx_r1) = [];
+       label(:,idx_r1) = [];
+    end
+    if right2 == 1
+       ex_order = order(:,idx_r2);
+       obj_chess(ex_order(1)).chess(ex_order(2)) = [];
+       order(:,idx_r2) = [];
+       label(:,idx_r2) = [];
+    end
+    if centerr == 1
+       ex_order = order(:,idx_cc);
+       obj_chess(ex_order(1)).chess(ex_order(2)) = [];
+       order(:,idx_cc) = [];
+       label(:,idx_cc) = [];
+    end
     Container.order = order;
     Container.label = label;
     Container.positions = positions;

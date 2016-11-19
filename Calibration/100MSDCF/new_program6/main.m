@@ -6,7 +6,7 @@ checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
 % name = ['DSC00',num2str(545)];
 % orig = imread([path,name,'.JPG']);
 % orig_bg = imread([path,'DSC00',num2str(547),'.JPG']);
-path = '../foto/Evaluation/5_c/6/';
+path = '../foto/Evaluation/5_c/4/';
 orig = imread([path,'fore.JPG']);
 orig_bg = imread([path,'back.JPG']);
 %% Normalizzazione

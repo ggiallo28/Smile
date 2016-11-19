@@ -1,5 +1,5 @@
 function obj = putCenters(obj, xOffset, yOffset, centers, index, Container)
-toplot = false;
+toplot = true;
     arr= struct2cell(centers);
     x = zeros(1,size(centers,1));
     y = zeros(1,size(centers,1));

@@ -151,9 +151,20 @@ for ff=1:size(folders,1)
                 if ~exist([path_3,'Container.mat'], 'file')
                    continue;
                 end
+                if exist([path_3,'done'], 'file')
+                   continue;
+                end
+                if exist([path_3,'skip'], 'file')
+                   continue;
+                end
                 load([path_3,'bb.mat'])
                 load([path_3,'Container.mat']);
                 disp([path_3,'....']);
+                if exist([path_3,'toflip'], 'file')
+                    checker_vector = fliplr(reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]));
+                else
+                    checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
+                end
                 fuse = Container.fuse;
                 modeling;
                 [left_center_axis, right_center_axis, mid_center_axis] = generate_central_axis(Container);

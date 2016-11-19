@@ -121,6 +121,9 @@ function obj_chess = completeComputeChess(obj_chess, transtions, Container)
                 for k=1:size(X,2)
                     if(isempty(find(X(:,k)==0, 1)))
                         [fitresult, ~] = createLineInv(Y(:,k),X(:,k),size(obj.color_mask));
+                        if(abs(fitresult.p1) == Inf || abs(fitresult.p2) == Inf)
+                           [fitresult, ~] = createLine(X(:,k),Y(:,k));
+                        end
                         obj.chess(i).v_lines_centroid{k} = fitresult;
                     else
                         obj.chess(i).v_lines_centroid{k} = [];

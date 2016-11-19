@@ -56,8 +56,8 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                 mask = maskC;
                 dilateLeft = 12;
                 dilateRight = 12;
-                toTakeLeft = true;
-                toTakeRight = true;
+                toTakeLeft = false;
+                toTakeRight = false;
             case 2
                 if ( ~isL1 )
                     continue;
@@ -69,13 +69,13 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                 maskI = maskL1I;
                 mask = maskL1;
                 dilateRight = 12;
-                toTakeRight = true;
+                toTakeRight = false;
                 if ( isL2 )
                     dilateLeft = 15;
                     toTakeLeft = false;
                 else
                     dilateLeft = 12;
-                    toTakeLeft = true;
+                    toTakeLeft = false;
                 end 
             case 3
                 if ( ~isL2 )
@@ -102,13 +102,13 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                 maskI = maskR1I;
                 mask = maskR1;
                 dilateLeft = 12;
-                toTakeLeft = true;
+                toTakeLeft = false;
                 if ( isR2 )
                    dilateRight = 15; 
                    toTakeRight  = false;
                 else
                    dilateRight = 12; 
-                   toTakeRight  = true;  
+                   toTakeRight  = false;  
                 end
             case 5
                 if ( ~isR2 )
@@ -230,7 +230,7 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
     % Provo con la funzione di matlab, se questa non rintraccia alcuni punti
     % allora provo con il mio metodo
         [imagePoints,~] = detectCheckerboardPoints(I.*repmat(uint8(maskI),1,1,3));
-    %    imshow(I); hold on; plot(imagePoints(:,1), imagePoints(:,2), 'ro')
+    %   imshow(I); hold on; plot(imagePoints(:,1), imagePoints(:,2), 'ro')
     % Orizzontale
         R = im2double(I(:,:,1)); G = im2double(I(:,:,2)); B = im2double(I(:,:,3));
         GRIDv2 = imdilate(image_line,strel('disk',10));
@@ -298,7 +298,7 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                     bw_tmp = im2bw(tmp,th);
                     th = th-0.005;
                     CC_tmp = bwconncomp(bw_tmp,4);
-%                     imshow(bw_tmp);
+                     imshow(bw_tmp);
 %                     pause(0.1)
 %                     th
                     if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)

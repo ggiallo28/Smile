@@ -1,5 +1,5 @@
 function bwD = mask_split(BW, inv_BW, x, y)
-toplot = false
+toplot = true;
     BW = bwareaopen(BW, 50); % Parametro
     inv_BW = bwareaopen(inv_BW, 50); % Parametro
     BW_edge = edge(BW);

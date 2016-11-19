@@ -1,5 +1,5 @@
 function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
-toplot = false;
+toplot = true;
 %     idx = find(color_square == 1);
 %     [idx,idy]=ind2sub(size(color_square),idx);
 %     j = boundary(idx,idy,0.1); % Parametro
