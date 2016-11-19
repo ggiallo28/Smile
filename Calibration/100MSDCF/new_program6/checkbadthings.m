@@ -89,9 +89,9 @@ function [color_square, y_c, x_c, isDone, isErased] = checkbadthings(color_squar
         [~, ~, ~, ~, rct_before]  = getRotatedRectangle(backup_color_square);
         max_size = max(transtions(:,4)); side = sqrt(max_size);
         op_th = round(0.15*(transtions(idx,4)/side)); % 0.15, 0.1
-        color_square = imerode(color_square,strel('rectangle',[op_th,round(op_th*1.5)])); %0, 1.2
+        color_square = imerode(color_square,strel('rectangle',[round(op_th*1.5),op_th])); %0, 1.2
         color_square = bwareaopen(color_square,round(Threshold*1.3)); % 0, 1.15, 1.3
-        color_square = imdilate(color_square,strel('rectangle',[op_th,round(op_th*1.5)]));
+        color_square = imdilate(color_square,strel('rectangle',[round(op_th*1.5),op_th]));
         if sum(sum(color_square)) == 0
             disp('erased')
             isErased = true;

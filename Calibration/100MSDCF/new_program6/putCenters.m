@@ -1,4 +1,5 @@
 function obj = putCenters(obj, xOffset, yOffset, centers, index, Container)
+toplot = false;
     arr= struct2cell(centers);
     x = zeros(1,size(centers,1));
     y = zeros(1,size(centers,1));
@@ -30,11 +31,13 @@ function obj = putCenters(obj, xOffset, yOffset, centers, index, Container)
             obj.chess(index).center_x = [obj.chess(index).center_x;pad];
             obj.chess(index).center_y = [ obj.chess(index).center_y;pad];
         end
+if toplot
         imshow(obj.color_mask); hold on;
         plot(lineT); l1 = legend(); set(l1,'visible','off');
         plot(lineB); l1 = legend(); set(l1,'visible','off');
         hold on; scatter(obj.chess(index).center_x(j,:),obj.chess(index).center_y(j,:))
         l1 = legend(); set(l1,'visible','off');
+end
     end
 %     while(size(x,2)>0 && size(y,2) >0)
 %         

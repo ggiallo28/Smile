@@ -1,4 +1,5 @@
 function bwD = mask_split(BW, inv_BW, x, y)
+toplot = false
     BW = bwareaopen(BW, 50); % Parametro
     inv_BW = bwareaopen(inv_BW, 50); % Parametro
     BW_edge = edge(BW);
@@ -14,7 +15,9 @@ function bwD = mask_split(BW, inv_BW, x, y)
     for i = 1:size(x,1)
         chess = bwD(y(i,1):y(i,2),x(i,1):x(i,2));
         condition = true;
+if toplot
         figure
+end
         while condition
             CC = bwconncomp(chess);
             bb = regionprops(CC,'BoundingBox'); bboxCorr = zeros(1,size(bb,1));
@@ -39,7 +42,9 @@ function bwD = mask_split(BW, inv_BW, x, y)
                     %tmp_chess = imerode(tmp_chess,strel('square',2));
                     tmp_chess = bwdist(~tmp_chess,'chessboard');
                     tmp_chess = tmp_chess>1;
+if toplot
                     imshowpair(tmp_chess,chess,'falsecolor');
+end
                     chess = chess | tmp_chess;
                     chess = bwareaopen(chess, 100);
                 end      
@@ -49,8 +54,8 @@ function bwD = mask_split(BW, inv_BW, x, y)
         end
         bwD(y(i,1):y(i,2),x(i,1):x(i,2))=chess;
     end
-
-    L = bwlabel(bwD);
-    RGB = label2rgb(L);
-    imshow(RGB);
+% 
+%     L = bwlabel(bwD);
+%     RGB = label2rgb(L);
+%     imshow(RGB);
 end

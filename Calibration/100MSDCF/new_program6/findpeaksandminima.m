@@ -2,7 +2,7 @@ function [pks, output_mid, hist_size ] = findpeaksandminima(image,windowSize,mpd
     h = imhist(image);
     
     h(40) = h(40)+10000;
-%    h(110) = h(110)+10000;
+    h(110) = h(110)+10000;
     
     h1 = filter(ones(1,windowSize)/windowSize,1,[h;h;h]);
     h1 = h1(size(h,1)+1:2*size(h,1)+1);

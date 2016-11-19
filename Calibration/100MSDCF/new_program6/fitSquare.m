@@ -1,4 +1,5 @@
 function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
+toplot = false;
 %     idx = find(color_square == 1);
 %     [idx,idy]=ind2sub(size(color_square),idx);
 %     j = boundary(idx,idy,0.1); % Parametro
@@ -12,10 +13,13 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
 
     tmp = bwconvhull(color_square);
     color_square_bb = regionprops(tmp,'BoundingBox');
-    color_square_bb = color_square_bb.BoundingBox; imshow(color_square); hold on
-    plot([color_square_bb(1) color_square_bb(1)+color_square_bb(3)  color_square_bb(1)+color_square_bb(3)...
-    color_square_bb(1) color_square_bb(1)],[color_square_bb(2)  color_square_bb(2) color_square_bb(2)+color_square_bb(4)...
-    color_square_bb(2)+color_square_bb(4) color_square_bb(2)]); l1 = legend(); set(l1,'visible','off');
+    color_square_bb = color_square_bb.BoundingBox; 
+    if toplot
+        imshow(color_square); hold on
+        plot([color_square_bb(1) color_square_bb(1)+color_square_bb(3)  color_square_bb(1)+color_square_bb(3)...
+        color_square_bb(1) color_square_bb(1)],[color_square_bb(2)  color_square_bb(2) color_square_bb(2)+color_square_bb(4)...
+        color_square_bb(2)+color_square_bb(4) color_square_bb(2)]); l1 = legend(); set(l1,'visible','off');
+    end
     color_square_edge_v = abs(imfilter(imfill(color_square,'holes'),[-1 0 1])) + abs(imfilter(imfill(color_square,'holes'),[1 0 -1]));
     color_square_edge_h = abs(imfilter(imfill(color_square,'holes'),[1 0 -1]'))+abs(imfilter(imfill(color_square,'holes'),[-1 0 1]'));
     [LTp, RTp, LBp, RBp, rct]  = getRotatedRectangle(color_square);
@@ -77,7 +81,9 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
 %     if(isDone)
 %         fitresult_top = fitresult_top_tmp;
 %     end
+if toplot
     plot(fitresult_top); l1 = legend(); set(l1,'visible','off'); 
+end
     if size(ccbot,1) > 50
         [idx_bot,idy_bot]=ind2sub(size(color_square),ccbot);
     else
@@ -89,7 +95,9 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
 %     if(isDone)
 %         fitresult_bot = fitresult_bot_tmp;
 %     end
+if toplot
     plot(fitresult_bot); l1 = legend(); set(l1,'visible','off');
+end
 %% HORIZONTAL 2
     yLB = fitresult_bot(x1);
     yRB = fitresult_bot(x2);
@@ -98,13 +106,21 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     yLL = linspace(yLB,yLT,6);
     yRR = linspace(yRB,yRT,6);
     [line1, ~] = createLine([x1 x2],[yLL(2) yRR(2)]);
-    plot(line1); l1 = legend(); set(l1,'visible','off');  
+    if toplot
+        plot(line1); l1 = legend(); set(l1,'visible','off');  
+    end
     [line2, ~] = createLine([x1 x2],[yLL(3) yRR(3)]);
-    plot(line2); l1 = legend(); set(l1,'visible','off');  
+    if toplot
+        plot(line2); l1 = legend(); set(l1,'visible','off');  
+    end
     [line3, ~] = createLine([x1 x2],[yLL(4) yRR(4)]);
-    plot(line3); l1 = legend(); set(l1,'visible','off');  
+    if toplot
+        plot(line3); l1 = legend(); set(l1,'visible','off'); 
+    end
     [line4, ~] = createLine([x1 x2], [yLL(5) yRR(5)]);
-    plot(line4); l1 = legend(); set(l1,'visible','off');  
+    if toplot
+        plot(line4); l1 = legend(); set(l1,'visible','off'); 
+    end
     chess.h_lines = cell(1,6);
     chess.h_lines{1} = fitresult_bot;
     chess.h_lines{2} = line1;
@@ -171,17 +187,21 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     [idx_left,idy_left] = ind2sub(size(color_square),ccleft);
     
     [fitresult_left, ~] = createLineInv(idx_left,idy_left,size(color_square));
+ if toplot
     plot(fitresult_left);
     l1 = legend();
     set(l1,'visible','off');
+ end
     [idx_right,idy_right]=ind2sub(size(color_square),ccright);
     [fitresult_right, ~] = createLineInv(idx_right,idy_right,size(color_square));
+if toplot
     plot(fitresult_right);
+    l1 = legend();
+    set(l1,'visible','off');
+end
     chess.v_lines = cell(1,2);
     chess.v_lines{1} = fitresult_left;
     chess.v_lines{2} = fitresult_right;
-    l1 = legend();
-    set(l1,'visible','off');
 %% PLOT   
     xx = -40:0.001:size(color_square,2)+40;
     [~,ii] = min(abs(fitresult_bot(xx(:)) - fitresult_left(xx(:))));
@@ -219,7 +239,9 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     [~,ii] = min(abs(fitresult_top(xx(:)) - fitresult_left(xx(:))));
     ytopleft = fitresult_top(xx(ii));
     xtopleft = xx(ii);
+if toplot
     scatter(xtopleft,ytopleft)
+end
     if(xtopleft<1)
         xtopleft = 1; 
     end
@@ -235,7 +257,9 @@ function [color_square, chess]  = fitSquare( color_square, x1, x2, chess)
     [~,ii] = min(abs(fitresult_top(xx(:)) - fitresult_right(xx(:))));
     ytopright = fitresult_top(xx(ii));
     xtopright = xx(ii);
+if toplot
     scatter(xtopright,ytopright)
+end
     if(xtopright<1)
         xtopright = 1; 
     end

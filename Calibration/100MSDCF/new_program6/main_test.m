@@ -11,12 +11,12 @@ for ff=1:size(folders,1)
         for ff2=1:size(folders_2,1)
             if ~(strcmp(folders_2(ff2).name,'..') || strcmp(folders_2(ff2).name,'.'))
                 path_3 = [path_2,folders_2(ff2).name,'/'];
-                if exist([path_3,'skip'], 'file') == 2
+                if exist([path_3,'curr.mat'], 'file') == 2
                     continue;
                 end
-                 if exist([path_3,'Container.mat'], 'file') == 2
-                    continue;
-                end
+%                  if exist([path_3,'Container.mat'], 'file') == 2
+%                     continue;
+%                 end
                 disp([path_3,'....']);
                 orig = imread([path_3,'fore.JPG']);
                 orig_bg = imread([path_3,'back.JPG']);
@@ -59,10 +59,14 @@ for ff=1:size(folders,1)
                 else
                     Container.confidence = 2.8;
                 end
+                if exist([path_3,'mpd'], 'file') == 2
+                     Container.mpd = 25; % 30, 25
+                else
+                     Container.mpd = 30; % 30, 25
+                end
                 Container.img_dim  = size(Container.I);
                 %Container.Threshold = round(Container.img_dim(1)*Container.img_dim(2)/7000); % Soglia dimensione blob normalizzata alla dimensione dell'immagine
                 Container.fraction = 20;
-                Container.mpd = 30; % 30, 25
                 Container.windowSize = 6; % 6
                 Container.op_th = 15;
                 segmentation;
@@ -82,12 +86,13 @@ for ff=1:size(folders,1)
                 Container.fuse = show_result(Container, true, path_3);
                 save([path_3,'Container.mat'],'Container');
                 close all;
+                save([path_3,'curr.mat'],'path_3');
             end
         end
     end
 end
 
-
+t_precision = 0; t_recall = 0; t_n = 0;
 for ff=1:size(folders,1)
     if ~(strcmp(folders(ff).name,'..') || strcmp(folders(ff).name,'.'))
         path_2 = [path,folders(ff).name,'/'];
@@ -108,13 +113,13 @@ for ff=1:size(folders,1)
                 % ~auto_seg & ~manual_seg = blu
                 load([path_3,'bb.mat'])
                 auto_seg = imcrop(imread([path_3,'seg.JPG'])==255,bb);
-                manual_seg = imcrop(rgb2gray(imread([path_3,'manual_seg.JPG']))==255,bb);
+                manual_seg = imfill(imclose(imcrop(rgb2gray(imread([path_3,'manual_seg.JPG']))==255,bb),strel('disk',20)),'holes');
                 white = auto_seg & manual_seg;
                 green = ~auto_seg & manual_seg;
                 red = auto_seg & ~manual_seg;
                 black = ~auto_seg & ~manual_seg;  
                 full_image = double(cat(3,red|white,green|white,white|black));
-                figure, imshow(full_image);
+%                 figure, imshow(full_image);
                 imwrite(im2double(full_image),[path_3,'segmentation_comparison.jpg']);
 %% TRUE POSITIVE, TRUE NEGATIVE, FALSE NEGATIVE, FALSE POSITIVE
                 size_image = size(auto_seg,1)*size(auto_seg,2);
@@ -126,10 +131,15 @@ for ff=1:size(folders,1)
                 precision = true_positive/(true_positive+false_positive);
                 recall = true_positive/(true_positive+false_negative); 
                 save_results_seg(true_positive, true_negative, false_positive, false_negative, precision, recall, path_3);
+                t_precision = precision + t_precision;
+                t_recall = recall + t_recall;
+                t_n = t_n +1;
             end
         end
     end
 end
+disp(['Precision ', num2str(t_precision/t_n), ' %']);
+disp(['Recall ', num2str(t_recall/t_n), ' %']);
 
 for ff=1:size(folders,1)
     if ~(strcmp(folders(ff).name,'..') || strcmp(folders(ff).name,'.'))

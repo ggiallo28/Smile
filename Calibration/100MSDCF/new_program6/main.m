@@ -1,12 +1,12 @@
 close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
-checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
+checker_vector = fliplr(reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]));
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
 % path = '../foto/ultime/';
 % name = ['DSC00',num2str(545)];
 % orig = imread([path,name,'.JPG']);
 % orig_bg = imread([path,'DSC00',num2str(547),'.JPG']);
-path = '../foto/Evaluation/3_c/3/';
+path = '../foto/Evaluation/5_c/6/';
 orig = imread([path,'fore.JPG']);
 orig_bg = imread([path,'back.JPG']);
 %% Normalizzazione
