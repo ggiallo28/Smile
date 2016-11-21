@@ -62,15 +62,19 @@ function [obj_chess, transitions, Container] = getColorBoundary(obj_red, obj_gre
     [a,b] = hist(ic,unique(ic));
     raw_label(3,idx_left) = {'Not_Duplicate'}; idx_color = b(a==2); 
     if ~isempty(idx_color)
-        idx_color = find(strcmp(c(idx_color),raw_label(1,idx_left)));
-        raw_label(3,idx_left(idx_color)) = {'Duplicate'};
+        for i=1:size(idx_color)
+            idx_color_sub = find(strcmp(c(idx_color(i)),raw_label(1,idx_left)));
+            raw_label(3,idx_left(idx_color_sub)) = {'Duplicate'};
+        end
     end
     [c,~,ic] = unique(raw_label(1,idx_right),'rows');
     [a,b] = hist(ic,unique(ic));
     raw_label(3,idx_right) = {'Not_Duplicate'}; idx_color = b(a==2); 
     if ~isempty(idx_color)
-        idx_color = find(strcmp(c(idx_color),raw_label(1,idx_right)));
-        raw_label(3,idx_right(idx_color)) = {'Duplicate'};
+        for i=1:size(idx_color)
+            idx_color_sub = find(strcmp(c(idx_color(i)),raw_label(1,idx_right)));
+            raw_label(3,idx_right(idx_color_sub)) = {'Duplicate'};
+        end
     end
     
     check = checker_vector(2,:,:);

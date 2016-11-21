@@ -1,5 +1,9 @@
-function [I, I_BG, O, O_BG, BB] = normalize_image(orig, orig_bg)
-    figure, [O, BB] = imcrop(orig);
+function [I, I_BG, O, O_BG, BB] = normalize_image(orig, orig_bg, bb)
+    if ~isempty(bb)
+       [O, BB] = imcrop(orig, bb); 
+    else
+        figure, [O, BB] = imcrop(orig);
+    end
     R = im2double(O(:,:,1));
     G = im2double(O(:,:,2));
     B = im2double(O(:,:,3));

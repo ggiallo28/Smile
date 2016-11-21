@@ -1,17 +1,23 @@
 close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
-checker_vector = fliplr(reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]));
+checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
-% path = '../foto/ultime/';
-% name = ['DSC00',num2str(545)];
-% orig = imread([path,name,'.JPG']);
-% orig_bg = imread([path,'DSC00',num2str(547),'.JPG']);
-path = '../foto/Evaluation/5_c/4/';
-orig = imread([path,'fore.JPG']);
-orig_bg = imread([path,'back.JPG']);
+path = '../foto/ultime/Maybe/';
+name = ['DSC00',num2str(220)];
+orig = imread([path,name,'.JPG']);
+orig_bg = imread([path,'DSC00',num2str(221),'.JPG']);
+% path = '../foto/Evaluation/5_c/4/';
+% orig = imread([path,'fore.JPG']);
+% orig_bg = imread([path,'back.JPG']);
 %% Normalizzazione
 Container = objContainer();
-[Container.I, Container.I_BG, Container.O, Container.O_BG, Container.BB] = normalize_image(orig, orig_bg);
+if exist([path,'bb.mat'], 'file') == 2
+    bb = load([path,'bb.mat']);
+    bb = bb.bb;
+else
+    bb = [];
+end
+[Container.I, Container.I_BG, Container.O, Container.O_BG, Container.BB] = normalize_image(orig, orig_bg, bb);
 %% Parametri
 Container.num_square = 5;
 if exist([path,'confidence'], 'file') == 2
@@ -44,7 +50,26 @@ Container = points_split(Container, pointsArray);
 Container = points_allign(Container);
 %% Mapping sulla superficie del Manifold
 Container = generate_mapping(Container, checker_vector);
-show_mapping(Container);
+%show_mapping(Container);
+points_match = save_mapping(Container);
+figure, imshow(orig); hold on;
+points_match_offset = points_match;
+for i=1:size(points_match,1)
+    row = points_match_offset(i,:);
+    for k=1:size(row,2)
+        EL = cell2mat(row(k));
+        if ~isempty(EL)
+            if EL(1) == 0 || EL(2) == 0
+                row(k) = cell(1,1);
+                disp('del');
+            else
+                row(k) = mat2cell([EL(1)+bb(1),EL(2)+bb(2)],1,2);
+                scatter(EL(1)+bb(1),EL(2)+bb(2));
+            end
+        end
+    end
+    points_match_offset(i,:) = row;
+end
 %% Calcolo angolo degli specchi
 % Pleft = [];
 % Pright = [];

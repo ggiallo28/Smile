@@ -193,7 +193,7 @@ for ff=1:size(folders,1)
         folders_2 = dir(path_2);
         for ff2=1:size(folders_2,1)
             if ~(strcmp(folders_2(ff2).name,'..') || strcmp(folders_2(ff2).name,'.'))
-                path_3 = [path_2,folders_2(ff2).name,'/'];
+                path_3 = [path_2,folders_2(ff2).name,'/']
                 if ~exist([path_3,'manual_points_image.png'], 'file') || ...
                         ~exist([path_3,'points_image.png'], 'file') || ...
                             ~exist([path_3,'y_points.mat'], 'file') || ...
@@ -202,8 +202,16 @@ for ff=1:size(folders,1)
                 end
                 load([path_3,'y_points.mat'])
                 load([path_3,'x_points.mat']);
+                load([path_3,'bb.mat']);
                 manual_image = imread([path_3,'manual_points_image.png']);
+                points_image = imread([path_3,'points_image.png']);
+                if size(manual_image,3) == 1
+                    disp(['skipped ', path_3]);
+                    continue;
+                end
                 logical_manual_image = manual_image(:,:,1) == 255 & manual_image(:,:,2) == 0 & manual_image(:,:,3) == 0;
+                logical_manual_image = logical_manual_image | manual_image(:,:,1) == 237 & manual_image(:,:,2) == 28 & manual_image(:,:,3) == 36;
+                logical_points_image = points_image(:,:,2) == 255 & points_image(:,:,1) == 0 & points_image(:,:,3) == 0;
                 props = regionprops(bwconncomp(logical_manual_image,8),'Centroid');
                 props = struct2cell(props); props_x = []; props_y = [];
                 for j=1:size(props,2)
@@ -219,11 +227,23 @@ for ff=1:size(folders,1)
                     if val <= 1.2
                         val = 0;
                     end
+%                     if val > 10
+%                         imshowpair(imcrop(logical_manual_image,bb), imcrop(logical_points_image,bb)); hold on;
+%                         scatter(x_points(i)-bb(1),y_points(i)-bb(2));
+%                         scatter(props_x(idx)-bb(1),props_y(idx)-bb(2));
+%                         pause
+%                     end
                     dist = dist + val;
-                    props_x(idx) = [];
-                    props_y(idx) = [];
+%                     props_x(idx) = [];
+%                     props_y(idx) = [];
                 end
-                dist = dist/size(x_points,1);
+                if(~isempty(dist) && dist>0)
+                    dist = dist/size(x_points,1)
+                    fileID = fopen([path_3,'results_corner.txt'],'w');
+                    str = ['Error: ', num2str(dist)];
+                    fprintf(fileID,str);
+                    fclose(fileID);
+                end
             end
         end
     end
