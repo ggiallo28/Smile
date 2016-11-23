@@ -10,7 +10,7 @@ pivot2pivot = 28.5;         %cm Distanza tra i due perni
 lengthHead = 15;            %cm % vertical 2*radius
 widthHead = 10;             %cm % horizontal 2*radius
 %% Parameters
-angles = 30:80;
+angles = 30:85;
 cameradist = 120:5:220;
 for count_i=1:size(angles,2)
     for count_k=1:size(cameradist,2)
