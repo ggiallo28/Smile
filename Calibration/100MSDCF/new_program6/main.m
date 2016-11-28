@@ -2,13 +2,13 @@ close all; clear all; clc;
 figure,imshow(imread('checkerboard.jpg'));
 checker_vector = reshape([[0,0,0;255,0,255];[0,0,0;0,255,255];[0,0,0;255,255,0];[255,255,255;255,0,0];[255,255,255;0,255,0];[255,255,255;0,0,255]],[2,6,3]);
 checker_center = [0.5*size(checker_vector,2),0.5*size(checker_vector,2)+1];
-path = '../foto/ultime/Maybe/';
-name = ['DSC00',num2str(220)];
-orig = imread([path,name,'.JPG']);
-orig_bg = imread([path,'DSC00',num2str(221),'.JPG']);
-% path = '../foto/Evaluation/5_c/4/';
-% orig = imread([path,'fore.JPG']);
-% orig_bg = imread([path,'back.JPG']);
+% path = '../foto/ultime/Maybe/';
+% name = ['DSC00',num2str(220)];
+% orig = imread([path,name,'.JPG']);
+% orig_bg = imread([path,'DSC00',num2str(221),'.JPG']);
+path = '../foto/Evaluation/4l_c/7/';
+orig = imread([path,'fore.JPG']);
+orig_bg = imread([path,'back.JPG']);
 %% Normalizzazione
 Container = objContainer();
 if exist([path,'bb.mat'], 'file') == 2
@@ -39,6 +39,7 @@ Container.obj_chess = error_check(obj_chess(1), obj_chess(2), obj_chess(3),  obj
 fuse = show_result(Container, false, path);
 %% MODELLAZIONE
 modeling;
+cyl = get_cylinder(Container);
 %% Fissa il centro degli assi
 [left_center_axis, right_center_axis, mid_center_axis] = generate_central_axis(Container);
 %% COORNER IDENTIFICATION

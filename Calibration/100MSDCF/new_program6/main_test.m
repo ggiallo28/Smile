@@ -11,7 +11,7 @@ for ff=1:size(folders,1)
         for ff2=1:size(folders_2,1)
             if ~(strcmp(folders_2(ff2).name,'..') || strcmp(folders_2(ff2).name,'.'))
                 path_3 = [path_2,folders_2(ff2).name,'/'];
-                if exist([path_3,'curr.mat'], 'file') == 2
+                if exist([path_3,'28112016.mat'], 'file') == 2
                     continue;
                 end
 %                  if exist([path_3,'Container.mat'], 'file') == 2
@@ -86,7 +86,7 @@ for ff=1:size(folders,1)
                 Container.fuse = show_result(Container, true, path_3);
                 save([path_3,'Container.mat'],'Container');
                 close all;
-                save([path_3,'curr.mat'],'path_3');
+                save([path_3,'28112016.mat'],'path_3');
             end
         end
     end
@@ -97,6 +97,9 @@ for ff=1:size(folders,1)
     if ~(strcmp(folders(ff).name,'..') || strcmp(folders(ff).name,'.'))
         path_2 = [path,folders(ff).name,'/'];
         folders_2 = dir(path_2);
+        p_prection = 0;
+        p_recall = 0;
+        p_n = 0;
         for ff2=1:size(folders_2,1)
             if ~(strcmp(folders_2(ff2).name,'..') || strcmp(folders_2(ff2).name,'.'))
                 path_3 = [path_2,folders_2(ff2).name,'/'];
@@ -134,8 +137,15 @@ for ff=1:size(folders,1)
                 t_precision = precision + t_precision;
                 t_recall = recall + t_recall;
                 t_n = t_n +1;
+                p_prection = precision + p_prection;
+                p_recall = recall + p_recall;
+                p_n = p_n +1;
             end
         end
+        pp = p_prection/p_n
+        pr = p_recall/p_n
+        fscore = 2*((pp*pr)/(pp+pr))
+        disp('dd');
     end
 end
 disp(['Precision ', num2str(t_precision/t_n), ' %']);
@@ -151,7 +161,7 @@ for ff=1:size(folders,1)
                 if ~exist([path_3,'Container.mat'], 'file')
                    continue;
                 end
-                if exist([path_3,'done'], 'file')
+                if exist([path_3,'28112016_c.mat'], 'file')
                    continue;
                 end
                 if exist([path_3,'skip'], 'file')
@@ -182,15 +192,19 @@ for ff=1:size(folders,1)
                 imwrite(im2double(image_gray),[path_3,'points_image.png'],'png');
                 save([path_3,'x_points.mat'],'x_points');
                 save([path_3,'y_points.mat'],'y_points');
+                save([path_3,'28112016_c.mat'],'path_3');
+                close all;
             end
         end
     end
 end
 
+dist_di = 0;
 for ff=1:size(folders,1)
     if ~(strcmp(folders(ff).name,'..') || strcmp(folders(ff).name,'.'))
         path_2 = [path,folders(ff).name,'/'];
         folders_2 = dir(path_2);
+        dist_im = [];
         for ff2=1:size(folders_2,1)
             if ~(strcmp(folders_2(ff2).name,'..') || strcmp(folders_2(ff2).name,'.'))
                 path_3 = [path_2,folders_2(ff2).name,'/']
@@ -210,6 +224,8 @@ for ff=1:size(folders,1)
                     continue;
                 end
                 logical_manual_image = manual_image(:,:,1) == 255 & manual_image(:,:,2) == 0 & manual_image(:,:,3) == 0;
+                size_square = sum(sum(manual_image(:,:,1) == 0 & manual_image(:,:,2) == 0 & manual_image(:,:,3) == 255))+1;
+                pixel2mm = 26/size_square;
                 logical_manual_image = logical_manual_image | manual_image(:,:,1) == 237 & manual_image(:,:,2) == 28 & manual_image(:,:,3) == 36;
                 logical_points_image = points_image(:,:,2) == 255 & points_image(:,:,1) == 0 & points_image(:,:,3) == 0;
                 props = regionprops(bwconncomp(logical_manual_image,8),'Centroid');
@@ -224,9 +240,9 @@ for ff=1:size(folders,1)
                     X = x_points(i); Y = y_points(i);
                     D = sqrt((props_x-X).^2 + (props_y-Y).^2);
                     [val, idx] = min(D);
-                    if val <= 1.2
-                        val = 0;
-                    end
+%                     if val <= 1.2
+%                         val = 0;
+%                     end
 %                     if val > 10
 %                         imshowpair(imcrop(logical_manual_image,bb), imcrop(logical_points_image,bb)); hold on;
 %                         scatter(x_points(i)-bb(1),y_points(i)-bb(2));
@@ -234,21 +250,34 @@ for ff=1:size(folders,1)
 %                         pause
 %                     end
                     dist = dist + val;
+                    dist_di = [dist_di; val];
+                    dist_im = [dist_im, val*pixel2mm];
 %                     props_x(idx) = [];
 %                     props_y(idx) = [];
                 end
                 if(~isempty(dist) && dist>0)
                     dist = dist/size(x_points,1)
                     fileID = fopen([path_3,'results_corner.txt'],'w');
-                    str = ['Error: ', num2str(dist)];
+                    str = ['Error: ', num2str(dist), ', ', num2str(dist*pixel2mm), ' mm'];
                     fprintf(fileID,str);
                     fclose(fileID);
                 end
             end
         end
+        mean(dist_im)
+        std(dist_im)
+        pause
     end
 end
+dist_di/div_di
 
+circ = 60;
+num_col = 24;
+[X,Y,~] = cylinder(circ/(2*pi),num_col);
+Z = repmat(fliplr(linspace(0,2.6*5,6))',1,num_col+1);
+X = [X;X;X];
+Y = [Y;Y;Y];
+surf(X,Y,Z);
 
 
 

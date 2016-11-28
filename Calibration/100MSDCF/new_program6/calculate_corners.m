@@ -297,8 +297,8 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                 while(condition && th>0)
                     bw_tmp = im2bw(tmp,th);
                     th = th-0.005;
-                    CC_tmp = bwconncomp(bw_tmp,4);
-                     imshow(bw_tmp);
+                    CC_tmp = bwconncomp(bwareaopen(bw_tmp,10,4),4);
+                    %imshow(bw_tmp);
 %                     pause(0.1)
 %                     th
                     if(CC_tmp.NumObjects ==1 && size(CC_tmp.PixelIdxList{1},1)>tt)
@@ -320,8 +320,10 @@ function pointsArray = calculate_corners(Container, left_center_axis, right_cent
                              condition = true;
                         end
                     end
-                    if(CC_tmp.NumObjects >= 2) 
-%                        CC_tmp
+                    if(CC_tmp.NumObjects >= 2)
+%                        
+% CC_tmp
+% imshow(bw_tmp);
                        store(1) = CC_tmp.PixelIdxList(1);
                        store(2) = CC_tmp.PixelIdxList(2);          
                     end 
