@@ -1,29 +1,27 @@
 clc; clear all; close all;
-%% This script can be used to know how many faces could be visibile by changing the parameters of the system
-%% Costants: These parameters are used to describe the parts of the system, are fixed and they refers to the dimensions of the mirror system in TU Wien.
-lengthMirrors = 65;         %cm
+set(0,'DefaultFigureVisible','on');  % all subsequent figures "off"
+Results = cell(1,6); count_res = 1;
+%% Costants
+lengthMirrors = 55;         %cm
 mirror2Pivot = 2.5;         %cm Ci sta una struttura ad angolo retto che collega lo specchio all'ase di rotazione, abbiamo lungo l'asse dello specchio uno sfasamento di 2.5 cm
 offset2Mirror = 3;          %cm ed uno sfasamento di 3 cm in avanti.
 pivot2pivot = 28.5;         %cm Distanza tra i due perni
-% Those calculation are useful because of the modeling of the system. The problem is that there is an offset between the pivot and the starting point of the reflective surface.
-% Here we take in account of this offset. The distance between the pivot and the starting of reflective surface create an right-angled triangle. So first we calculate the Hypotenuse 
-% of this triangle, and than the inner angles. 
-lengthPivotMirrors = lengthMirrors+mirror2Pivot;
-lengthHypotenuse = sqrt(offset2Mirror^2 + mirror2Pivot^2);
-angle2Pivot = rad2deg(asin(offset2Mirror/lengthHypotenuse));
-%% Parameters: You can change those parameters in order to check a different configuration.
-angleRightMirror = 68;                       %deg
-angleLeftMirror = 180-angleRightMirror;      %deg
-distanceCamera = 220;                        %cm
-fovHCamera = 50;                             %deg
-isIdealCamera = true;                        %the value fovHCamera is used only if the value isIdealCamera is true, otherwise we consider a camera with variable field of view
-%% HEAD MODEL
 lengthHead = 15;            %cm % vertical 2*radius
 widthHead = 10;             %cm % horizontal 2*radius
-headPosx = 0.4*pivot2pivot;                  %cm
-headPosy = 14;                               %cm
+%% Parameters
+angleRightMirror = 52.5+2.5+2.5;%71.5;      %deg
+angleLeftMirror = 180-angleRightMirror;      %deg
+distanceCamera = 220;       %cm
+fovHCamera = 50;            %deg
+isIdealCamera = false;
+%% HEAD POSITION
+headPosx = 0.5*pivot2pivot; %cm % x0,y0 ellipse centre coordinates
+headPosy = 50;              %cm
 %% Logic
-angleBetweenMirror = abs(angleRightMirror-angleLeftMirror);     % Angle betwwen the two mirrors
+lengthPivotMirrors = lengthMirrors+mirror2Pivot; % Lunghezza dello specchio più offset dovuto al fatto che lo specchio non finisce dove è posto l'asse di rotazione (pivot).
+angleBetweenMirror = abs(angleRightMirror-angleLeftMirror); % Angolo tra gli specchi
+lengthHypotenuse = sqrt(offset2Mirror^2 + mirror2Pivot^2); % Ipotenusa dello sfasamento
+angle2Pivot = rad2deg(asin(offset2Mirror/lengthHypotenuse));  %deg angolo in alto del triangolo sotto. Angolo fisso dovuto alla struttura (entità dell'offset)
 N = 360/angleBetweenMirror; % FORMULA 1: Dice quanti riflessi vengono prodotti, quelli visibili saranno un sottoinsieme. Da usare come verifica.
 % Proietto l'ipotenusa che si forma sull'asse X e Y in modo da avere le coordinate del punto in basso a destra. Il sistema
 % di riferimento è posto sul perno sinisto.
@@ -54,25 +52,9 @@ kLeft = (inPointLeft(1)*(-exPointLeft(2)) - exPointLeft(1)*(-inPointLeft(2)))/(i
 mRight = ((-inPointRight(2)) - (-exPointRight(2)))/(inPointRight(1) - exPointRight(1));
 kRight = (inPointRight(1)*(-exPointRight(2)) - exPointRight(1)*(-inPointRight(2)))/(inPointRight(1) - exPointRight(1));
 [mirrorsCenter(1),mirrorsCenter(2)] = inters2rette(mLeft,kLeft,mRight,kRight);
-% %% HEAD POSITION
-% xH = -200:200;
-% m_dist = 64;
-% xoff = sqrt(m_dist/(1-cos(deg2rad(0.5*angleBetweenMirror))^2));
-% yHLeft = mLeft*(xH - mirrorsCenter(1)) + mirrorsCenter(2) - xoff;  
-% kHLeft = (xH(1)*yHLeft(2) - xH(2)*yHLeft(1))/(xH(1) - xH(2));
-% 
-% yHRight = mRight*(xH - mirrorsCenter(1)) + mirrorsCenter(2) - xoff;  
-% kHRight = (xH(1)*yHRight(2) - xH(2)*yHRight(1))/(xH(1) - xH(2));
-% 
-% aa = xoff*cos(deg2rad(0.5*angleBetweenMirror));
-% bb = sqrt(xoff*xoff-aa*aa)
-% %headPosy = 16; headPosx = (headPosy-kHRight)/mRight; headPosx =
-% %(headPosy-kHLeft)/mLeft;
-% % plot(xH,yHLeft) plot(xH,yHRight)
-
 % Sto ipotizzando la camera al centro (X) e posta ad una distanza (Y) definita precedentemente
 cameraCenter(1) = 0.5*pivot2pivot; cameraCenter(2) = -distanceCamera; 
-cameraCenter(2) = -(exPointRight(2) +0.5*distanceBetweenMirror(2)*sqrt(1/cos(deg2rad(180-90-0.5*fovHCamera))^2-1));
+cameraCenter(2) = -exPointRight(2) -0.5*distanceBetweenMirror(2)*sqrt(1/cos(deg2rad(65))^2-1)
 % Angolo della retta passante per il centro degli specchi e il centro della testa, serve per capire di quanto ruotare
 % Deommentare per allineare la testa e la camera con il centro di rotazione degli specchi
 % headPosx = mirrorsCenter(1);

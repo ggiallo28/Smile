@@ -12,100 +12,62 @@ lengthPivotMirrors = lengthMirrors+mirror2Pivot;
 lengthHypotenuse = sqrt(offset2Mirror^2 + mirror2Pivot^2);
 angle2Pivot = rad2deg(asin(offset2Mirror/lengthHypotenuse));
 %% Parameters: You can change those parameters in order to check a different configuration.
-angleRightMirror = 68;                       %deg
+angleRightMirror = 45;                       %deg
 angleLeftMirror = 180-angleRightMirror;      %deg
-distanceCamera = 220;                        %cm
+distanceCamera = 170;                        %cm
 fovHCamera = 50;                             %deg
 isIdealCamera = true;                        %the value fovHCamera is used only if the value isIdealCamera is true, otherwise we consider a camera with variable field of view
 %% HEAD MODEL
 lengthHead = 15;            %cm % vertical 2*radius
 widthHead = 10;             %cm % horizontal 2*radius
-headPosx = 0.4*pivot2pivot;                  %cm
-headPosy = 14;                               %cm
+headPosx = 0.5*pivot2pivot; %cm
+headPosy = 14;              %cm
 %% Logic
-angleBetweenMirror = abs(angleRightMirror-angleLeftMirror);     % Angle betwwen the two mirrors
-N = 360/angleBetweenMirror; % FORMULA 1: Dice quanti riflessi vengono prodotti, quelli visibili saranno un sottoinsieme. Da usare come verifica.
-% Proietto l'ipotenusa che si forma sull'asse X e Y in modo da avere le coordinate del punto in basso a destra. Il sistema
-% di riferimento è posto sul perno sinisto.
-%   ---------------->                          -------------------|->
-%   |\                                                           /|
-%   | \                                                         / |   %%  Standardizzazione dei riferimenti: centro sul perno sinistro
-%   |__\ <- Punto                                    Punto ->  /__|
-%       |                                                     |
-% Calcolo posizione punti interni specchi (estremi inferiori)
+angleBetweenMirror = abs(angleRightMirror-angleLeftMirror);  % Angle betwwen the two mirrors
+N = 360/angleBetweenMirror; % FORMULA 1: Number of reflections produced, those visible will be a subset. To use as verification.
+% Position of the inner extremes of the two mirrors with respect to the axis center placed on the left pivot. 
 inPointLeft(1) =  lengthHypotenuse*cos(deg2rad(angleLeftMirror-angle2Pivot));                   %X 
 inPointLeft(2) =  lengthHypotenuse*sin(deg2rad(angleLeftMirror-angle2Pivot));                   %Y
-inPointRight(1) = pivot2pivot + lengthHypotenuse*cos(deg2rad(angleRightMirror+angle2Pivot));    %X, considero la traslazione lungo X per normalizzare i riferimenti
+inPointRight(1) = pivot2pivot + lengthHypotenuse*cos(deg2rad(angleRightMirror+angle2Pivot));    %X
 inPointRight(2) = lengthHypotenuse*sin(deg2rad(angleRightMirror+angle2Pivot));                  %Y
 distanceBetweenMirror(1) = pdist([inPointLeft;inPointRight],'euclidean'); %shortest
-% Punti esterni specchi
+% Position of the externals extremes
 exPointLeft(1) = inPointLeft(1) + lengthMirrors*cos(deg2rad(angleLeftMirror));                  %X
 exPointLeft(2) = inPointLeft(2) + lengthMirrors*sin(deg2rad(angleLeftMirror));                  %Y
-exPointRight(1) = inPointRight(1) + lengthMirrors*cos(deg2rad(angleRightMirror));               %X,considero della traslazione lungo X
+exPointRight(1) = inPointRight(1) + lengthMirrors*cos(deg2rad(angleRightMirror));               %X
 exPointRight(2) = inPointRight(2) + lengthMirrors*sin(deg2rad(angleRightMirror));               %Y
 distanceBetweenMirror(2) = pdist([exPointLeft;exPointRight],'euclidean');
-% Coefficienti angolari e costante delle rette passanti per i due specchi, mi serve per calcolare la posizione del centro di rotazione
-% y = (x*y1 - x*y2 + x1*y2 - x2*y1)/(x1 - x2);
-% y = x*(y1 - y2)/(x1 - x2) + (x1*y2 - x2*y1)/(x1 - x2);
-% m = (y1 - y2)/(x1 - x2)
-% k = (x1*y2 - x2*y1)/(x1 - x2)
+% Slope of the two lines that go through the two mirrors, we need this two lines in order to obtain the position of the rotational center.
 mLeft = ((-inPointLeft(2)) - (-exPointLeft(2)))/(inPointLeft(1) - exPointLeft(1));
 kLeft = (inPointLeft(1)*(-exPointLeft(2)) - exPointLeft(1)*(-inPointLeft(2)))/(inPointLeft(1) - exPointLeft(1));
 mRight = ((-inPointRight(2)) - (-exPointRight(2)))/(inPointRight(1) - exPointRight(1));
 kRight = (inPointRight(1)*(-exPointRight(2)) - exPointRight(1)*(-inPointRight(2)))/(inPointRight(1) - exPointRight(1));
 [mirrorsCenter(1),mirrorsCenter(2)] = inters2rette(mLeft,kLeft,mRight,kRight);
-% %% HEAD POSITION
-% xH = -200:200;
-% m_dist = 64;
-% xoff = sqrt(m_dist/(1-cos(deg2rad(0.5*angleBetweenMirror))^2));
-% yHLeft = mLeft*(xH - mirrorsCenter(1)) + mirrorsCenter(2) - xoff;  
-% kHLeft = (xH(1)*yHLeft(2) - xH(2)*yHLeft(1))/(xH(1) - xH(2));
-% 
-% yHRight = mRight*(xH - mirrorsCenter(1)) + mirrorsCenter(2) - xoff;  
-% kHRight = (xH(1)*yHRight(2) - xH(2)*yHRight(1))/(xH(1) - xH(2));
-% 
-% aa = xoff*cos(deg2rad(0.5*angleBetweenMirror));
-% bb = sqrt(xoff*xoff-aa*aa)
-% %headPosy = 16; headPosx = (headPosy-kHRight)/mRight; headPosx =
-% %(headPosy-kHLeft)/mLeft;
-% % plot(xH,yHLeft) plot(xH,yHRight)
-
-% Sto ipotizzando la camera al centro (X) e posta ad una distanza (Y) definita precedentemente
-cameraCenter(1) = 0.5*pivot2pivot; cameraCenter(2) = -distanceCamera; 
-cameraCenter(2) = -(exPointRight(2) +0.5*distanceBetweenMirror(2)*sqrt(1/cos(deg2rad(180-90-0.5*fovHCamera))^2-1));
-% Angolo della retta passante per il centro degli specchi e il centro della testa, serve per capire di quanto ruotare
-% Deommentare per allineare la testa e la camera con il centro di rotazione degli specchi
+%% CAMERA POSITION
+% If we have and ideal camera me consider the distanceCamera as parameter, otherwise we adjust the position of the camera according to the current
+% angle betwwen the mirrors
+cameraCenter(1) = 0.5*pivot2pivot; 
+if isIdealCamera
+    cameraCenter(2) = -distanceCamera; 
+else
+    cameraCenter(2) = -(exPointRight(2) +0.5*distanceBetweenMirror(2)*sqrt(1/cos(deg2rad(180-90-0.5*fovHCamera))^2-1));
+end
+% Uncomment to align the head and the camera with the mirror rotation center
 % headPosx = mirrorsCenter(1);
 % cameraCenter(1) = mirrorsCenter(1);
+
+% Angle of the line through the center of the mirrors and the center of the head, is used to figure out how to rotate
 angleHead = rad2deg(atan2((-headPosy-mirrorsCenter(2)),(headPosx-mirrorsCenter(1))));
 if angleHead<0
     angleHead = -angleHead;
 end
 vH = genMirroring(angleLeftMirror, angleRightMirror, angleHead, N);
 
-% [el_x, el_y] = genHead(headPosx, -headPosy, widthHead, lengthHead);
-% v = genMirroring(angleLeftMirror, angleRightMirror, angleHead, N);
-% el_X = zeros(size(v,2),size(el_x,2));
-% el_Y = zeros(size(v,2),size(el_y,2));
-% distOR = sqrt((mirrorsCenter(1)-mean(el_x))^2 + (mirrorsCenter(2)-mean(el_y))^2);
-% %% Flip per effetto mirroring
-% for i=1:size(v,2);
-%     el_x_flip = el_x;
-%     el_y_flip = el_y;
-%     if v(2,i) ~= 0
-%         [el_x_flip,el_y_flip] = rotate(el_x_flip,el_y_flip,headPosx,-headPosy,180,'y');
-%     end
-%     [el_X(i,:),el_Y(i,:)] = rotate(el_x_flip,el_y_flip,mirrorsCenter(1),mirrorsCenter(2),v(1,i),'z');
-%     new_center_x = mean(el_X(i,:));
-%     new_center_y = mean(el_Y(i,:));
-%     distROT = sqrt((mirrorsCenter(1)-mean(el_X(i,:)))^2 + (mirrorsCenter(2)-mean(el_Y(i,:)))^2);
-%     assert(abs(distOR-distROT)<exp(-10));
-% end
-
 [el_x, el_y, nose] = genHead(headPosx, -headPosy, widthHead, lengthHead);
 el_X = zeros(floor(N)-1,size(el_x,2));
 el_Y = zeros(floor(N)-1,size(el_y,2));
 distOR = sqrt((mirrorsCenter(1)-mean(el_x))^2 + (mirrorsCenter(2)-mean(el_y))^2);
+% Compute Rotations
 for i=1:size(el_x,2)
     anglePoint = rad2deg(atan2((el_y(i)-mirrorsCenter(2)),(el_x(i)-mirrorsCenter(1))));
     if anglePoint<0
@@ -116,14 +78,14 @@ for i=1:size(el_x,2)
        [el_X(j,i),el_Y(j,i)] = rotate(el_x(i),el_y(i),mirrorsCenter(1),mirrorsCenter(2),v(1,j),'z'); 
     end
 end
+% Check Rotations
 for j=1:floor(N)-1
     new_center_x = mean(el_X(j,:));
     new_center_y = mean(el_Y(j,:));
     distROT = sqrt((mirrorsCenter(1)-mean(el_X(j,:)))^2 + (mirrorsCenter(2)-mean(el_Y(j,:)))^2);
     assert(abs(distOR-distROT)<exp(-10));
 end
-
-%% Plot Inverti le Y. plot([x1 x2], [y1 y2])
+%% Plot we have to use -Y. plot([x1 x2], [y1 y2])
 figure,hold on,axis([-distanceCamera distanceCamera -distanceCamera distanceCamera])
 plot([0 pivot2pivot], [0 0],'b');
 plot([0 inPointLeft(1)], [0 -inPointLeft(2)],'b');
@@ -144,8 +106,7 @@ for i=1:size(v,2);
     plot([p1(1) cameraCenter(1)], [p1(2) cameraCenter(2)]);
     plot([p2(1) cameraCenter(1)], [p2(2) cameraCenter(2)]);
 end
-
-%% Disegnare elemento centrale
+%% Drawing the scene
 % y = (x*y1 - x*y2 + x1*y2 - x2*y1)/(x1 - x2);
 % y = x*(y1 - y2)/(x1 - x2) + (x1*y2 - x2*y1)/(x1 - x2);
 y1 = -inPointLeft(2); y2 = -inPointRight(2);
@@ -177,7 +138,7 @@ for j=1:floor(N)-1
     assert(abs(distOR-distROT)<exp(-10));
 end
 hold off;
-%% Plot delle teste potenzialmente visibili
+%% Plot full setup
 fig = figure; hold on,axis([-distanceCamera distanceCamera -distanceCamera distanceCamera])
 plot([0 pivot2pivot], [0 0],'b');
 plot([0 inPointLeft(1)], [0 -inPointLeft(2)],'b');
@@ -192,7 +153,7 @@ plot(el_x,el_y,'b')
 plot([min(el_x) cameraCenter(1)], [median(el_y) cameraCenter(2)],'b');
 plot([max(el_x) cameraCenter(1)], [median(el_y) cameraCenter(2)],'b');
 
-% Retta passante per il centro della camera e l'estremo esterno dello specchio sinistro
+% Line through the center of the camera and the outer end of the left mirror
 y1 = -exPointLeft(2); x2 = cameraCenter(1);
 x1 = exPointLeft(1); y2 = cameraCenter(2);
 mCoeff2Left = (y1 - y2)/(x1 - x2);
@@ -210,7 +171,7 @@ if ~isIdealCamera
 end
 plot(xRange2Left,yRange2Left,'k');
 
-% Retta passante per il centro della camera e l'estremo esterno dello specchio destro
+% Line through the center of the camera and the outer end of the right mirror
 y1 = -exPointRight(2); x2 = cameraCenter(1);
 x1 = exPointRight(1); y2 = cameraCenter(2);
 mCoeff2Right = (y1 - y2)/(x1 - x2);
@@ -273,7 +234,7 @@ vis_el_X = [];
 vis_el_Y = [];
 for i=1:floor(N)-1;
     for j=1:size(el_X,2)
-        if (... % Il punto per essere potenzialmente visibile deve trovarsi tra le linee nere oppure al di sotto dell'elemento centrale ma "dietro" gli specchi
+        if (... % The point to be potentially visible must be located between the black lines (in previous plot) or below the central element, but "behind" the mirrors
             ( isOver(mCoeff2Left, kCoeff2Left, el_X(i,j), el_Y(i,j))&&isBelow(mCoeff2Left_Central, kCoeff2Left_Central, el_X(i,j), el_Y(i,j))||...
               isOver(mCoeff2Right, kCoeff2Right, el_X(i,j), el_Y(i,j))&&isBelow(mCoeff2Right_Central, kCoeff2Right_Central, el_X(i,j), el_Y(i,j)))||...
               isOver(mCoeffRight_Mirror, kCoeffRight_Mirror, el_X(i,j), el_Y(i,j))&&isOver(mCoeff2Right, kCoeff2Right, el_X(i,j), el_Y(i,j))&&el_Y(i,j)<right_max_y||...
@@ -293,7 +254,7 @@ for i=1:size(vis_el_Y,1);
     plot(tmp_x,tmp_y);
 end
 
-%% Plot delle proiezioni realmente visibili
+%% Drawing
 num_p = 2; idx = []; num_c = 1; old_i = 0;
 for i=1:size(v,2);
     [p1, p2] = getTangentLine(el_X(i,:),el_Y(i,:), cameraCenter);
@@ -318,7 +279,7 @@ for i=1:size(v,2);
     end
 end
 scatter(nose(1),nose(2),'g');
-%% Conta numero riflessi
+%% Reflections counting
 num_h = 1;
 for i=1:size(idx,2);
     [XX, YY, rot] = rotateNose(nose, angleLeftMirror, angleRightMirror, mirrorsCenter, N, idx(i));
@@ -328,8 +289,9 @@ for i=1:size(idx,2);
       isOver(mCoeffRight_Mirror, kCoeffRight_Mirror, XX, YY)&&isOver(mCoeff2Right, kCoeff2Right, XX, YY)&&YY<right_max_y||...
       isOver(mCoeffLeft_Mirror, kCoeffLeft_Mirror, XX, YY)&&isOver(mCoeff2Left, kCoeff2Left, XX, YY)&& YY<left_min_y)          
         if(~isBehind(el_X, el_Y, XX, YY, cameraCenter(1), cameraCenter(2), idx(i)))
-            if (~isNoseBehindHead(el_X(idx(i),:), el_Y(idx(i),:), XX, YY,  cameraCenter) && abs(rot) < 90)
-                num_h = num_h +1
+            %if (~isNoseBehindHead(el_X(idx(i),:), el_Y(idx(i),:), XX, YY,  cameraCenter) && abs(rot) < 90)
+            if (abs(rot) <= 89)
+                num_h = num_h +1;
                 scatter(XX,YY,'g');
             else
                 scatter(XX,YY,'r');
@@ -337,31 +299,4 @@ for i=1:size(idx,2);
         end
     end
 end
-disp(['We can see always the frontal head but also ', num2str(num_h-1), ' Nose. There are ', num2str(num_c), ' heads in range. I can see ', num2str(num_p/2), ' partial head.']);
-%% Test se abbiamo intersezione
-% radius = pdist([mirrorsCenter;[headPosx, -headPosy]],'euclidean');
-% %circle(mirrorsCenter(1),mirrorsCenter(2),radius);
-% % Se abbiamo intersezione basta trovare l'intersezione tra le rette che passano per gli estremi degli specchi e il centro camera, in questo modo otteniamo il settore 
-% % angolare dove le teste sono visibili.
-% P1 = [-35.415,13.75]; % Punto a sinistra
-% P2 = [63.73,13.76]; % Punto a destra
-% PC = [14.1200,-20]; % Punto centrale
-% d1 = pdist([P1;PC],'euclidean');
-% d2 = pdist([P2;PC],'euclidean');
-% a1 = asin(d1/(2*radius)); % settore angolare sinistro, da considerarsi positivo data la convenzione vH e il sistema di riferimento usato
-% a2 = asin(d2/(2*radius)); % settore angolare destro, da considerarsi negativo data la convenzione vH e il sistema di riferimento usato
-% % Il sistema di riferimento ha X -> Y verso il basso e Z entrante: è centrato dove si trova il pivot sinistro.
-% 
-% % Se non abbiamo intersezione (delta negativo) bisogna considerare il punto tangente
-% % EQ1 = y - yd - m*(x - xd)
-% % EQ2 = -r + (x-xc)^2 + (y-yc)^2 % Sostitusico la nella 2 con la 1
-% syms r x xc yc xd yd r m 
-% EQ = -r + (x-xc)^2 + (yd + m*(x - xd)-yc)^2;
-% c = -r + (0-xc)^2 + (yd + m*(0 - xd)-yc)^2;
-% a = m^2 + 1;
-% b = subs(EQ - c - x*x*a,x,1);
-% solve(b*b-4*a*c,m)
-% Il punto tangente è caratterizzato dall'avere un delta nullo.
-% trovati i settori angolari saranno visibili le sole teste che avranno angolo compreso tra il minimo e il massimo settore angolare
-%% TODO calcolare indice di copertura
-
+disp(['We can see always the frontal head but also ', num2str(num_h-1), ' Noses. There are ', num2str(num_c), ' heads in range. I can see ', num2str(num_p/2), ' partial heads.']);

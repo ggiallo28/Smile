@@ -1,6 +1,7 @@
 clc; clear all; close all;
 it = 0;
 set(0,'DefaultFigureVisible','off');  % all subsequent figures "off"
+warning off
 Results = cell(1,6); count_res = 1;
 %% Costants
 lengthMirrors = 65;         %cm
@@ -19,7 +20,8 @@ for count_i=1:size(angles,2)
         angleLeftMirror = 180-angleRightMirror;      %deg
         % distanceCamera = 220;       %cm
         distanceCamera = cameradist(count_k);       %cm
-        fovHCamera = 83;            %deg
+        fovHCamera = 50;            %deg
+        isIdealCamera = true;
         %% Logic
         lengthPivotMirrors = lengthMirrors+mirror2Pivot; % Lunghezza dello specchio più offset dovuto al fatto che lo specchio non finisce dove è posto l'asse di rotazione (pivot).
         angleBetweenMirror = abs(angleRightMirror-angleLeftMirror); % Angolo tra gli specchi
@@ -55,7 +57,7 @@ for count_i=1:size(angles,2)
                 else
                     toplot = true;
                 end
-                toplot = false;
+                toplot1 = false;
                 
                 %% HEAD POSITION
 %                 headPosx = 0.5*pivot2pivot; %cm % x0,y0 ellipse centre coordinates
@@ -104,7 +106,7 @@ for count_i=1:size(angles,2)
                 %     assert(abs(distOR-distROT)<exp(-10));
                 % end
 
-                [el_x, el_y] = genHead(headPosx, -headPosy, widthHead, lengthHead);
+                [el_x, el_y, nose] = genHead(headPosx, -headPosy, widthHead, lengthHead);
                 el_X = zeros(floor(N)-1,size(el_x,2));
                 el_Y = zeros(floor(N)-1,size(el_y,2));
                 distOR = sqrt((mirrorsCenter(1)-mean(el_x))^2 + (mirrorsCenter(2)-mean(el_y))^2);
@@ -126,7 +128,7 @@ for count_i=1:size(angles,2)
                 end
 
                 %% Plot Inverti le Y. plot([x1 x2], [y1 y2])
-                if toplot
+                if toplot1
                     figure,hold on,axis([-distanceCamera distanceCamera -distanceCamera distanceCamera])
                     plot([0 pivot2pivot], [0 0],'b');
                     plot([0 inPointLeft(1)], [0 -inPointLeft(2)],'b');
@@ -174,7 +176,7 @@ for count_i=1:size(angles,2)
                 end
 
                 for j=1:floor(N)-1
-                    if toplot
+                    if toplot1
                         plot(XRange(j,:),YRange(j,:))
                     end
                     new_center_x = mean(XRange(j,:));
@@ -207,6 +209,12 @@ for count_i=1:size(angles,2)
                 kCoeff2Left = (x1*y2 - x2*y1)/(x1 - x2);
                 xRange2Left = -200:0.1:200;
                 yRange2Left = xRange2Left*mCoeff2Left + kCoeff2Left;
+                if ~isIdealCamera
+                    rad_fovHCamera = deg2rad(fovHCamera);
+                    mCoeff2Left = tan(pi/2-0.5*rad_fovHCamera)*sign(mCoeff2Left);
+                    yRange2Left = mCoeff2Left*(xRange2Left - cameraCenter(1)) + cameraCenter(2);  
+                    kCoeff2Left = (xRange2Left(1)*yRange2Left(2) - xRange2Left(2)*yRange2Left(1))/(xRange2Left(1) - xRange2Left(2));
+                end
                 plot(xRange2Left,yRange2Left,'k');
 
                 % Retta passante per il centro della camera e l'estremo esterno dello specchio destro
@@ -216,12 +224,13 @@ for count_i=1:size(angles,2)
                 kCoeff2Right = (x1*y2 - x2*y1)/(x1 - x2);
                 xRange2Right = -200:0.1:200;
                 yRange2Right = xRange2Right*mCoeff2Right + kCoeff2Right;
+                if ~isIdealCamera
+                    rad_fovHCamera = deg2rad(fovHCamera);
+                    mCoeff2Right = tan(pi/2-0.5*rad_fovHCamera)*sign(mCoeff2Right);
+                    yRange2Right = mCoeff2Right*(xRange2Right - cameraCenter(1)) + cameraCenter(2);
+                    kCoeff2Right = (xRange2Right(1)*yRange2Right(2) - xRange2Right(2)*yRange2Right(1))/(xRange2Right(1) - xRange2Right(2));
+                end
                 plot(xRange2Right,yRange2Right,'k');
-
-                num = abs(mCoeff2Left-mCoeff2Right);
-                den = abs(1-mCoeff2Left*mCoeff2Right);
-                cur_fov1 = rad2deg(atan(num/den));
-                cur_fov2 = 180-cur_fov1*2;
 
                 % Rette pasanti per gli estremi dell'elemento centrale
                 for j=1:floor(N)-1
@@ -292,6 +301,7 @@ for count_i=1:size(angles,2)
                 num_p = 2;
                 num_c = 1;
                 old_i = 0;
+                idx = [];
                 for i=1:size(v,2);
                     [p1, p2] = getTangentLine(el_X(i,:),el_Y(i,:), cameraCenter);
                     XX = [p1(1), p2(1)];
@@ -308,9 +318,30 @@ for count_i=1:size(angles,2)
                                 end
                                 num_p = num_p +1;
                                 if old_i ~= i 
+                                    idx = [idx,i];
                                     num_c = num_c +1;
                                     old_i = i;
                                 end
+                            end
+                        end
+                    end
+                end
+                scatter(nose(1),nose(2),'g');
+                %% Conta numero riflessi
+                num_h = 1;
+                for i=1:size(idx,2);
+                    [XX, YY, rot] = rotateNose(nose, angleLeftMirror, angleRightMirror, mirrorsCenter, N, idx(i));
+                    if (...  
+                    ( isOver(mCoeff2Left, kCoeff2Left, XX, YY)&&isBelow(mCoeff2Left_Central, kCoeff2Left_Central, XX, YY)||...
+                      isOver(mCoeff2Right, kCoeff2Right, XX, YY)&&isBelow(mCoeff2Right_Central, kCoeff2Right_Central, XX, YY))||...
+                      isOver(mCoeffRight_Mirror, kCoeffRight_Mirror, XX, YY)&&isOver(mCoeff2Right, kCoeff2Right, XX, YY)&&YY<right_max_y||...
+                      isOver(mCoeffLeft_Mirror, kCoeffLeft_Mirror, XX, YY)&&isOver(mCoeff2Left, kCoeff2Left, XX, YY)&& YY<left_min_y)          
+                        if(~isBehind(el_X, el_Y, XX, YY, cameraCenter(1), cameraCenter(2), idx(i)))
+                            if (~isNoseBehindHead(el_X(idx(i),:), el_Y(idx(i),:), XX, YY,  cameraCenter) && abs(rot) < 90)
+                                num_h = num_h +1
+                                scatter(XX,YY,'g');
+                            else
+                                scatter(XX,YY,'r');
                             end
                         end
                     end
@@ -321,6 +352,7 @@ for count_i=1:size(angles,2)
                 Results(count_res,4) = {headPosy_range(count_l)};
                 Results(count_res,5) = {num_c};
                 Results(count_res,6) = {num_p/2};
+                Results(count_res,7) = {num_h};
                 if toplot
                     print(fig,['D:/Plot/plot',num2str(count_res)],'-dpng');
                     close all;
