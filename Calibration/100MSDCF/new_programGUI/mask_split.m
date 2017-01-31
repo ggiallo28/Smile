@@ -44,7 +44,7 @@ end
                     tmp_chess = tmp_chess>1;
 if toplot | Container.isGUI
                     imshowpair(tmp_chess,chess,'falsecolor');
-                    pause(0.2);
+                    pause(0.01);
 end
                     chess = chess | tmp_chess;
                     chess = bwareaopen(chess, 100);

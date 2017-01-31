@@ -1,6 +1,6 @@
 %% Separa i riflessi
 close all;
-Container = split_refletions(Container, fuse, checker_vector);
+Container = split_refletions(Container, fuse, checker_vector); % O(numero viste)
 %% Creazione Maschere per separazione riflessi
 Container = generate_mask(Container);%obj_chess, label, order, positions, types, size(fuse));
 %% Calcolo convexhull dei riflessi: controllare se è necessario fare sta cosa
@@ -9,6 +9,7 @@ Container = generate_bwconvhull(Container);
 if Container.isGUI
 %    cla(Container.app.UIAxes9);
 end
+% Modelling O(numero settori angolari)
 for i=1:size(Container.obj_chess,1)
     if ( ~Container.obj_chess(i).isEmpty )
         for j=1:size(Container.obj_chess(i).chess,2)
@@ -46,3 +47,4 @@ if ( Container.isR2 )
     FullMask = FullMask | Container.maskR2I;
 end
 Container.FullMask = FullMask;
+

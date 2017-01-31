@@ -35,7 +35,7 @@ function [maskedRGBImage, BW] = createColorMask(RGB, bw, output_minima_mid, Thre
             R = maskedRGBImage(:,:,1);
             G = maskedRGBImage(:,:,2);
             B = maskedRGBImage(:,:,3);
-            hold off
+            %hold off
             R(BW) = 255;
             G(BW) = 0;
             B(BW) = 0;

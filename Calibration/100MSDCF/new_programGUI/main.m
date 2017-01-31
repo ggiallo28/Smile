@@ -36,7 +36,7 @@ Container.mpd = 30; % 30, 25
 Container.windowSize = 6; % 6
 Container.op_th = 15;
 %% SEGMENTATION
-segmentation;
+segmentation; % O(numero pixel)
 obj_chess = completeComputeChess(obj_chess, transtions, Container);
 %% Identifica colori usando Background, Error Check
 Container.obj_chess = error_check(obj_chess(1), obj_chess(2), obj_chess(3),  obj_chess(4));
@@ -47,11 +47,13 @@ modeling;
 % cyl = get_cylinder(Container);
 %% Fissa il centro degli assi
 [left_center_axis, right_center_axis, mid_center_axis] = generate_central_axis(Container);
+% Corner detector numero_viste*[O(harris) |+ O(numero corner)]
 %% COORNER IDENTIFICATION
 %% Corner
 pointsArray = calculate_corners(Container, left_center_axis, right_center_axis, mid_center_axis, path);
 %% Divido i punti per ogni componente
 Container = points_split(Container, pointsArray);
+% Association numero_viste*O(numero corner)
 %% Padding delle matrici e allineamento
 Container = points_allign(Container);
 %% Mapping sulla superficie del Manifold
@@ -76,6 +78,10 @@ for i=1:size(points_match,1)
     end
     points_match_offset(i,:) = row;
 end
+%% Complessità totale
+% O(numero pixel) + O(numero settori angolari) + numero_viste*[O(harris) |+ O(numero corner)] + numero_viste*O(numero corner) = 
+% O(numero pixel) + O(numero settori angolari) + numero_viste*[O(harris) + O(numero corner)]
+
 % %% MIRROR ANGLE
 % idxCentral = 3;
 % idxReflected = 2;

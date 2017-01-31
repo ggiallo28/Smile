@@ -13,6 +13,9 @@ function fuse = show_result(Container, toSave, path)
     end
     BW = uint8(255.*(inv_BW-col_BW));
     fuse = colors_fuse+repmat(BW,[1 1 3]);
+    if Container.isGUI 
+        return;
+    end
     if ~Container.isGUI  
         fig = figure; imshow([I;fuse]); hold on;
     end

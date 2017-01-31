@@ -130,7 +130,7 @@ function Container = generate_mask(Container)
             figure, imshow(maskL2);
         else
             imshow(maskL2,'Parent',Container.app.UIAxes8);
-            pause(1);
+            pause(0.15);
         end
     end
     if ( isL1 )
@@ -140,7 +140,7 @@ function Container = generate_mask(Container)
         figure, imshow(maskL1);
         else
             imshow(maskL1,'Parent',Container.app.UIAxes8);
-            pause(1);
+            pause(0.15);
         end
     end
     if ( isC )
@@ -150,7 +150,7 @@ function Container = generate_mask(Container)
             figure, imshow(maskC);
         else
             imshow(maskC,'Parent',Container.app.UIAxes8);
-            pause(1);
+            pause(0.15);
         end
     end
     if ( isR1 )
@@ -160,7 +160,7 @@ function Container = generate_mask(Container)
             figure, imshow(maskR1);
         else
             imshow(maskR1,'Parent',Container.app.UIAxes8);
-            pause(1);
+            pause(0.15);
         end
     end
     if ( isR2 )
@@ -170,7 +170,7 @@ function Container = generate_mask(Container)
             figure, imshow(maskR2);
         else
             imshow(maskR2,'Parent',Container.app.UIAxes8);
-            pause(1);
+            pause(0.15);
         end
     end
     if Container.isGUI

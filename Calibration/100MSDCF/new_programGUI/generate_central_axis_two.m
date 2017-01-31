@@ -1,4 +1,4 @@
-function [left_center_axis, right_center_axis, mid_center_axis] = generate_central_axis_two(Container, path)
+function [left_center_axis, right_center_axis, mid_center_axis] = generate_central_axis_two(Container)
 %% INIT
     I = Container.I;
     obj_chess = Container.obj_chess;
@@ -33,16 +33,18 @@ function [left_center_axis, right_center_axis, mid_center_axis] = generate_centr
     left = imdilate(edge(WHITEMASK),strel('disk',7));
     right = imdilate(edge(BLACKMASK),strel('disk',7));
     center_axis = left & right;
-    fig = figure;
-    imshow(I); hold on;
-    v_legend = [];
+    if (~Container.isGUI)
+        fig = figure;
+        imshow(I); hold on;
+        v_legend = [];
+    end
     mask = false(size(FullMask));
     if ( isL1 ) 
         mask = imerode(maskL1I,strel('square',10));
     end
     left1_center_axis = center_axis.*mask;
     idx = find(left1_center_axis == 1);
-    if ( ~isempty(idx) )
+    if ( ~isempty(idx) && ~Container.isGUI)
         [idy,idx] = ind2sub(size(FullMask),idx);
         [left1_fitresult, ~] = createLineInv(idy,idx,size(FullMask));
         plot(left1_fitresult,'b'); 
@@ -53,7 +55,7 @@ function [left_center_axis, right_center_axis, mid_center_axis] = generate_centr
     end
     left2_center_axis = center_axis.*mask;
     idx = find(left2_center_axis == 1);
-    if ( ~isempty(idx) )
+    if ( ~isempty(idx) && ~Container.isGUI)
         [idy,idx] = ind2sub(size(FullMask),idx);
         [left2_fitresult, ~] = createLineInv(idy,idx,size(FullMask));
         plot(left2_fitresult,'b'); 
@@ -66,7 +68,7 @@ function [left_center_axis, right_center_axis, mid_center_axis] = generate_centr
     end
     right1_center_axis = center_axis.*mask;
     idx = find(right1_center_axis == 1);
-    if ( ~isempty(idx) )
+    if ( ~isempty(idx) && ~Container.isGUI)
         [idy,idx] = ind2sub(size(FullMask),idx);
         [right1_fitresult, ~] = createLineInv(idy,idx,size(FullMask));
         plot(right1_fitresult,'r'); 
@@ -77,7 +79,7 @@ function [left_center_axis, right_center_axis, mid_center_axis] = generate_centr
     end
     right2_center_axis = center_axis.*mask;
     idx = find(right2_center_axis == 1);
-    if ( ~isempty(idx) )
+    if ( ~isempty(idx) && ~Container.isGUI)
         [idy,idx] = ind2sub(size(FullMask),idx);
         [right2_fitresult, ~] = createLineInv(idy,idx,size(FullMask));
         plot(right2_fitresult,'r'); 
@@ -88,13 +90,13 @@ function [left_center_axis, right_center_axis, mid_center_axis] = generate_centr
     if ( isC )
         mid_center_axis = center_axis.*imerode(maskCI,strel('square',10));
         idx = find(mid_center_axis == 1);
-        if ( ~isempty(idx) )
+        if ( ~isempty(idx) && ~Container.isGUI)
             [idy,idx] = ind2sub(size(FullMask),idx);
             [mid_fitresult, ~] = createLineInv(idy,idx,size(FullMask));
             plot(mid_fitresult, 'y');
             v_legend = [v_legend, 'center axis'];
         end
     end
-    legend(v_legend);
-    print(fig,[path,'central_axis'],'-dpng')
+   % legend(v_legend);
+   % print(fig,[path,'central_axis'],'-dpng')
 end

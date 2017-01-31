@@ -1,23 +1,28 @@
 function P = iterativeThreshold(CC, GRIDv, sep_squares, Container, path)
+toSave = false;
+if toSave
     persistent blob_index;
     if isempty(blob_index)
         blob_index = 0;
     end
+end
     P = [];
     %% Create Folder
-    if ~exist([path,'iterative_img'], 'dir')
+    if toSave && ~exist([path,'iterative_img'], 'dir')
         curr_folder = pwd;
         cd(path)
         mkdir iterative_img;
         cd(curr_folder);
     end
-    path_2 = [path,'iterative_img'];
+    if toSave
+        path_2 = [path,'iterative_img'];
+    end
     for l=1:CC.NumObjects
         [cutR,cutC] = ind2sub(size(GRIDv),CC.PixelIdxList{l});
         tmp = sep_squares(min(cutR):max(cutR),min(cutC):max(cutC));
-        deb = zeros(size(GRIDv));
-	    deb(min(cutR):max(cutR),min(cutC):max(cutC)) = tmp;
-        imshowpair(deb,sep_squares);
+%        deb = zeros(size(GRIDv));
+%	    deb(min(cutR):max(cutR),min(cutC):max(cutC)) = tmp;
+%        imshowpair(deb,sep_squares);
         tt = 0.3*size(tmp,1)*size(tmp,2);
         condition = true;
         th = 0.9; store = cell(2,1);
@@ -25,13 +30,15 @@ function P = iterativeThreshold(CC, GRIDv, sep_squares, Container, path)
         %figure, imshow(tmp), hold on, scatter(dot(:,1),dot(:,2))
         P = [P;min(cutR)+dot(:,2),min(cutC)+dot(:,1)];    
         D = [];
-        if ~exist([path_2,'/img',num2str(l)], 'dir')
+        if toSave && ~exist([path_2,'/img',num2str(l)], 'dir')
             curr_folder = pwd;
             cd(path_2)
             mkdir(['img',num2str(l)]);
             cd(curr_folder);
         end
-        path_3 = [path_2,'\img',num2str(l)];
+        if toSave
+            path_3 = [path_2,'\img',num2str(l)];
+        end
         if(isempty(dot))            
 %            figure
             while(condition && th>0)
@@ -66,8 +73,10 @@ function P = iterativeThreshold(CC, GRIDv, sep_squares, Container, path)
 %   blob_index                     
 % CC_tmp
 % imshow(bw_tmp);
+if toSave
                    imwrite(im2double(bw_tmp),[path_3,'/blob',num2str(blob_index),'.jpg']);
                    blob_index = blob_index +1;
+end
                    store(1) = CC_tmp.PixelIdxList(1);
                    store(2) = CC_tmp.PixelIdxList(2);          
                 end 

@@ -273,9 +273,24 @@ for ff=1:size(folders,1)
                 end
             end
         end
-        mean(dist_im)
-        std(dist_im)
-        pause
+        mean_error = mean(dist_im)
+        std_error = std(dist_im)
+        dist_im(dist_im>2) = [];
+        max_error = max(dist_im)
+        x = 1:size(dist_im,2);
+        y = dist_im;
+        sz = 15;
+        c = linspace(1,10,length(x));
+        c(randperm(length(c)))
+        figure, scatter(x,y,sz,'black','filled'); hold on;
+        plot([1,size(dist_im,2)],[mean_error, mean_error],'green','LineWidth',2);
+        plot([1,size(dist_im,2)],[mean_error-std_error, mean_error-std_error],'red','LineWidth',2);
+        plot([1,size(dist_im,2)],[mean_error+std_error, mean_error+std_error],'red','LineWidth',2);
+        plot([1,size(dist_im,2)],[0.7, 0.7],'magenta','LineWidth',2);
+        xm1 = sum(dist_im<0.7)/sum(dist_im>0)
+        legend('Error mm','Mean Error','Sigma Error','Sigma Error', [num2str(xm1), '% less then 0.7 mm']);
+        txt1 = ['Max Error ', num2str(max_error)];
+        text(find(dist_im == max_error),max_error,txt1)
     end
 end
 dist_di/div_di
